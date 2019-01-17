@@ -28,33 +28,36 @@ check_c_compiler_flag("" toolchain_is_ok)
 assert(toolchain_is_ok "The toolchain is unable to build a dummy C file. See CMakeError.log.")
 
 set(CMAKE_EXECUTABLE_SUFFIX .elf)
-set(ZEPHYR_PREBUILT_EXECUTABLE zephyr_prebuilt)
 
-set(OFFSETS_H_TARGET           offsets_h)
-set(SYSCALL_MACROS_H_TARGET    syscall_macros_h_target)
-set(SYSCALL_LIST_H_TARGET      syscall_list_h_target)
-set(DRIVER_VALIDATION_H_TARGET driver_validation_h_target)
-set(KOBJ_TYPES_H_TARGET        kobj_types_h_target)
-set(LINKER_SCRIPT_TARGET       linker_script_target)
+set(ZEPHYR_PREBUILT_EXECUTABLE ${IMAGE}zephyr_prebuilt)
 
+set(OFFSETS_H_TARGET           ${IMAGE}offsets_h)
+set(SYSCALL_MACROS_H_TARGET    ${IMAGE}syscall_macros_h_target)
+set(SYSCALL_LIST_H_TARGET      ${IMAGE}syscall_list_h_target)
+set(DRIVER_VALIDATION_H_TARGET ${IMAGE}driver_validation_h_target)
+set(KOBJ_TYPES_H_TARGET        ${IMAGE}kobj_types_h_target)
+set(LINKER_SCRIPT_TARGET       ${IMAGE}linker_script_target)
 
-if(NOT PROPERTY_LINKER_SCRIPT_DEFINES)
-  set_property(GLOBAL PROPERTY PROPERTY_LINKER_SCRIPT_DEFINES -D__GCC_LINKER_CMD__)
+set(OFFSETS_LIB                ${IMAGE}offsets)
+set(KERNEL_LIBRARY             ${IMAGE}kernel)
+
+if(NOT ${IMAGE}PROPERTY_LINKER_SCRIPT_DEFINES)
+  set_property(GLOBAL PROPERTY ${IMAGE}PROPERTY_LINKER_SCRIPT_DEFINES -D__GCC_LINKER_CMD__)
 endif()
 
 define_property(GLOBAL PROPERTY PROPERTY_OUTPUT_FORMAT BRIEF_DOCS " " FULL_DOCS " ")
 set_property(   GLOBAL PROPERTY PROPERTY_OUTPUT_FORMAT elf32-little${ARCH}) # BFD format
 
-# "zephyr_interface" is a source-less library that encapsulates all the global
+# ${IMAGE}zephyr_interface is a source-less library that encapsulates all the global
 # compiler options needed by all source files. All zephyr libraries,
 # including the library named "zephyr" link with this library to
 # obtain these flags.
 # https://cmake.org/cmake/help/latest/manual/cmake-buildsystem.7.html#interface-libraries
-add_library(zephyr_interface INTERFACE)
+add_library(${IMAGE}zephyr_interface INTERFACE)
 
 # "zephyr" is a catch-all CMake library for source files that can be
 # built purely with the include paths, defines, and other compiler
-# flags that come with zephyr_interface.
+# flags that come with ${IMAGE}zephyr_interface.
 zephyr_library_named(zephyr)
 
 zephyr_include_directories(
@@ -454,8 +457,8 @@ function(construct_add_custom_command_for_linker_pass linker_output_name output_
   endif()
 
   zephyr_get_include_directories_for_lang(C current_includes)
-  get_filename_component(base_name ${CMAKE_CURRENT_BINARY_DIR} NAME)
-  get_property(current_defines GLOBAL PROPERTY PROPERTY_LINKER_SCRIPT_DEFINES)
+  file(RELATIVE_PATH base_name "${CMAKE_BINARY_DIR}" "${PROJECT_BINARY_DIR}")
+  get_property(current_defines GLOBAL PROPERTY ${IMAGE}PROPERTY_LINKER_SCRIPT_DEFINES)
 
   set(${output_variable}
     OUTPUT ${linker_cmd_file_name}
@@ -499,20 +502,20 @@ set_ifndef(  DTS_BOARD_FIXUP_FILE                                   ${BOARD_DIR}
 set_ifndef(    DTS_SOC_FIXUP_FILE                 ${SOC_DIR}/${ARCH}/${SOC_PATH}/dts_fixup.h)
 set(           DTS_APP_FIXUP_FILE                      ${APPLICATION_SOURCE_DIR}/dts_fixup.h)
 
-set_ifndef(DTS_CAT_OF_FIXUP_FILES ${ZEPHYR_BINARY_DIR}/include/generated/generated_dts_board_fixups.h)
+set_ifndef(${IMAGE}DTS_CAT_OF_FIXUP_FILES ${ZEPHYR_BINARY_DIR}/include/generated/generated_dts_board_fixups.h)
 
 # Concatenate the fixups into a single header file for easy
 # #include'ing
-file(WRITE ${DTS_CAT_OF_FIXUP_FILES} "/* May only be included by generated_dts_board.h */\n\n")
+file(WRITE ${${IMAGE}DTS_CAT_OF_FIXUP_FILES} "/* May only be included by generated_dts_board.h */\n\n")
 foreach(fixup_file
       ${DTS_BOARD_FIXUP_FILE}
       ${DTS_SOC_FIXUP_FILE}
       ${DTS_APP_FIXUP_FILE}
       ${shield_dts_fixups}
-	)
+  )
   if(EXISTS ${fixup_file})
-	file(READ ${fixup_file} contents)
-	file(APPEND ${DTS_CAT_OF_FIXUP_FILES} "${contents}")
+    file(READ ${fixup_file} contents)
+    file(APPEND ${${IMAGE}DTS_CAT_OF_FIXUP_FILES} "${contents}")
   endif()
 endforeach()
 
@@ -522,12 +525,12 @@ endforeach()
 # build are not exported to external build systems #5605"; when we
 # integrate with an external build system we read out all compiler
 # flags when the external project is created. So an external project
-# defined in subsys or ext will not get global flags added by drivers/
+# defined in subsys or ext will not get image-global flags added by drivers/
 # or tests/ as the subdirectories are ordered now.
 #
 # Another example of when the order matters is the reading and writing
-# of global properties such as ZEPHYR_LIBS or
-# GENERATED_KERNEL_OBJECT_FILES.
+# of global properties such as ${IMAGE}ZEPHYR_LIBS or
+# ${IMAGE}GENERATED_KERNEL_OBJECT_FILES.
 #
 # Arch is placed early because it defines important compiler flags
 # that must be exported to external build systems defined in
@@ -688,14 +691,12 @@ gen_kobj(KOBJ_INCLUDE_PATH)
 # Generate offsets.c.obj from offsets.c
 # Generate offsets.h     from offsets.c.obj
 
-set(OFFSETS_LIB offsets)
-
 set(OFFSETS_C_PATH ${ZEPHYR_BASE}/arch/${ARCH}/core/offsets/offsets.c)
 set(OFFSETS_O_PATH ${CMAKE_CURRENT_BINARY_DIR}/CMakeFiles/${OFFSETS_LIB}.dir/arch/${ARCH}/core/offsets/offsets.c.obj)
 set(OFFSETS_H_PATH ${PROJECT_BINARY_DIR}/include/generated/offsets.h)
 
 add_library(          ${OFFSETS_LIB} STATIC ${OFFSETS_C_PATH})
-target_link_libraries(${OFFSETS_LIB} zephyr_interface)
+target_link_libraries(${OFFSETS_LIB} ${IMAGE}zephyr_interface)
 add_dependencies(     ${OFFSETS_LIB}
   ${SYSCALL_LIST_H_TARGET}
   ${SYSCALL_MACROS_H_TARGET}
@@ -719,10 +720,10 @@ zephyr_get_include_directories_for_lang(C ZEPHYR_INCLUDES)
 add_subdirectory(kernel)
 
 # Read list content
-get_property(ZEPHYR_LIBS_PROPERTY GLOBAL PROPERTY ZEPHYR_LIBS)
+get_property(ZEPHYR_LIBS_PROPERTY GLOBAL PROPERTY ${IMAGE}ZEPHYR_LIBS)
 
 foreach(zephyr_lib ${ZEPHYR_LIBS_PROPERTY})
-  # TODO: Could this become an INTERFACE property of zephyr_interface?
+  # TODO: Could this become an INTERFACE property of ${IMAGE}zephyr_interface?
   add_dependencies(${zephyr_lib} ${OFFSETS_H_TARGET})
 
   # Verify that all (non-imported) libraries have source
@@ -731,7 +732,7 @@ foreach(zephyr_lib ${ZEPHYR_LIBS_PROPERTY})
   get_target_property(lib_imported ${zephyr_lib} IMPORTED)
   get_target_property(lib_sources  ${zephyr_lib} SOURCES)
   if(lib_sources STREQUAL lib_sources-NOTFOUND
-      AND (NOT (${zephyr_lib} STREQUAL app))
+      AND (NOT (${zephyr_lib} STREQUAL ${IMAGE}app))
       AND (NOT lib_imported)
       )
     # app is not checked because it's sources are added to it after
@@ -751,7 +752,7 @@ if(CONFIG_APPLICATION_MEMORY)
   # certain items.
   set(kernel_object_file_list
     ${ZEPHYR_LIBS_PROPERTY}
-    kernel
+    ${KERNEL_LIBRARY}
     )
   list(
     REMOVE_ITEM
@@ -836,7 +837,7 @@ if(CONFIG_APPLICATION_MEMORY)
     set(def "${def} ${f}")
   endforeach()
   set_property(GLOBAL APPEND PROPERTY
-    PROPERTY_LINKER_SCRIPT_DEFINES
+    ${IMAGE}PROPERTY_LINKER_SCRIPT_DEFINES
     ${def}
     )
 endif() # CONFIG_APPLICATION_MEMORY
@@ -880,11 +881,11 @@ set(zephyr_lnk
   ${LINKERFLAGPREFIX},--whole-archive
   ${ZEPHYR_LIBS_PROPERTY}
   ${LINKERFLAGPREFIX},--no-whole-archive
-  kernel
+  ${KERNEL_LIBRARY}
   ${OFFSETS_O_PATH}
-  ${LIB_INCLUDE_DIR}
+  ${${IMAGE}LIB_INCLUDE_DIR}
   -L${PROJECT_BINARY_DIR}
-  ${TOOLCHAIN_LIBS}
+  ${${IMAGE}TOOLCHAIN_LIBS}
   )
 
 if(CONFIG_GEN_ISR_TABLES)
@@ -916,7 +917,7 @@ if(CONFIG_GEN_ISR_TABLES)
     ${GEN_ISR_TABLE_EXTRA_ARG}
     DEPENDS ${ZEPHYR_PREBUILT_EXECUTABLE}
     )
-  set_property(GLOBAL APPEND PROPERTY GENERATED_KERNEL_SOURCE_FILES isr_tables.c)
+  set_property(GLOBAL APPEND PROPERTY ${IMAGE}GENERATED_KERNEL_SOURCE_FILES isr_tables.c)
 endif()
 
 if(CONFIG_CODE_DATA_RELOCATION)
@@ -930,14 +931,14 @@ if(CONFIG_CODE_DATA_RELOCATION)
      ${ZEPHYR_BASE}/scripts/gen_relocate_app.py
      $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:--verbose>
      -d ${APPLICATION_BINARY_DIR}
-     -i '$<TARGET_PROPERTY:code_data_relocation_target,COMPILE_DEFINITIONS>'
+     -i '$<TARGET_PROPERTY:${IMAGE}code_data_relocation_target,COMPILE_DEFINITIONS>'
      -o ${MEM_RELOCATAION_LD}
      -c ${MEM_RELOCATAION_CODE}
-     DEPENDS app kernel ${ZEPHYR_LIBS_PROPERTY}
+     DEPENDS ${KERNEL_LIBRARY} ${ZEPHYR_LIBS_PROPERTY}
      )
 
-   add_library(code_relocation_source_lib  STATIC ${MEM_RELOCATAION_CODE})
-   target_link_libraries(code_relocation_source_lib zephyr_interface)
+   add_library(${IMAGE}code_relocation_source_lib  STATIC ${MEM_RELOCATAION_CODE})
+   target_link_libraries(${IMAGE}code_relocation_source_lib ${IMAGE}zephyr_interface)
 
 endif()
 
@@ -1076,7 +1077,7 @@ if(CONFIG_ARM AND CONFIG_USERSPACE)
     priv_stacks_output_obj_renamed
     )
 
-  set_property(GLOBAL APPEND PROPERTY GENERATED_KERNEL_OBJECT_FILES priv_stacks_output_obj_renamed_lib)
+  set_property(GLOBAL APPEND PROPERTY ${IMAGE}GENERATED_KERNEL_OBJECT_FILES priv_stacks_output_obj_renamed_lib)
 endif()
 
 if(CONFIG_USERSPACE)
@@ -1196,12 +1197,12 @@ if(CONFIG_USERSPACE)
     output_obj_renamed
     )
 
-  set_property(GLOBAL APPEND PROPERTY GENERATED_KERNEL_OBJECT_FILES output_obj_renamed_lib)
+  set_property(GLOBAL APPEND PROPERTY ${IMAGE}GENERATED_KERNEL_OBJECT_FILES output_obj_renamed_lib)
 endif()
 
 # Read global variables into local variables
-get_property(GKOF GLOBAL PROPERTY GENERATED_KERNEL_OBJECT_FILES)
-get_property(GKSF GLOBAL PROPERTY GENERATED_KERNEL_SOURCE_FILES)
+get_property(GKOF GLOBAL PROPERTY ${IMAGE}GENERATED_KERNEL_OBJECT_FILES)
+get_property(GKSF GLOBAL PROPERTY ${IMAGE}GENERATED_KERNEL_SOURCE_FILES)
 
 
 get_property(CSTD GLOBAL PROPERTY CSTD)
@@ -1228,7 +1229,7 @@ if(CONFIG_CPU_HAS_MPU AND CONFIG_USERSPACE)
         add_custom_target(
           ${APP_SMEM_DEP} ALL
           DEPENDS app
-          kernel
+          ${KERNEL_LIBRARY}
          )
 
         add_custom_command(
@@ -1325,7 +1326,7 @@ add_dependencies(     ${ZEPHYR_PREBUILT_EXECUTABLE} ${ALIGN_SIZING_DEP} ${PRIV_S
 
 
 if(GKOF OR GKSF)
-  set(KERNEL_ELF kernel_elf)
+  set(KERNEL_ELF ${IMAGE}kernel_elf)
   set(logical_target_for_zephyr_elf ${KERNEL_ELF})
 
   # The second linker pass uses the same source linker script of the
@@ -1336,7 +1337,7 @@ if(GKOF OR GKSF)
     ${custom_command}
     )
 
-  set(LINKER_PASS_FINAL_SCRIPT_TARGET linker_pass_final_script_target)
+  set(LINKER_PASS_FINAL_SCRIPT_TARGET ${IMAGE}linker_pass_final_script_target)
   add_custom_target(
     ${LINKER_PASS_FINAL_SCRIPT_TARGET}
     DEPENDS
@@ -1439,30 +1440,46 @@ add_custom_command(
   POST_BUILD
   ${post_build_commands}
   COMMENT "Generating files from zephyr.elf for board: ${BOARD}"
+  WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
   # NB: COMMENT only works for some CMake-Generators
   )
+if(FIRST_BOILERPLATE_EXECUTION)
 
-# To populate with hex files to merge, do the following:
-#  set_property(GLOBAL APPEND PROPERTY HEX_FILES_TO_MERGE ${my_local_list})
-# Note that the zephyr.hex file will not be included automatically.
-get_property(HEX_FILES_TO_MERGE GLOBAL PROPERTY HEX_FILES_TO_MERGE)
-if(HEX_FILES_TO_MERGE)
-  # Merge in out-of-tree hex files.
-  set(MERGED_HEX_NAME merged.hex)
-
-  add_custom_command(
-    OUTPUT ${MERGED_HEX_NAME}
-    COMMAND
-    ${PYTHON_EXECUTABLE}
-    ${ZEPHYR_BASE}/scripts/mergehex.py
-    -o ${MERGED_HEX_NAME}
-    ${HEX_FILES_TO_MERGE}
-    DEPENDS ${HEX_FILES_TO_MERGE} ${logical_target_for_zephyr_elf}
+  # To populate with hex files to merge, do the following:
+  #  set_property(GLOBAL APPEND PROPERTY HEX_FILES_TO_MERGE ${my_local_list})
+  # Note that the zephyr.hex file will not be included automatically.
+  get_property(
+    HEX_FILES_TO_MERGE
+    GLOBAL PROPERTY
+    HEX_FILES_TO_MERGE
+    )
+  get_property(
+    HEX_FILES_TO_MERGE_TARGET
+    GLOBAL PROPERTY
+    HEX_FILES_TO_MERGE_TARGET
     )
 
-  add_custom_target(mergehex ALL DEPENDS ${MERGED_HEX_NAME})
-  list(APPEND FLASH_DEPS mergehex)
-endif()
+  if(HEX_FILES_TO_MERGE)
+    # Merge in out-of-tree hex files.
+    set(MERGED_HEX_NAME merged.hex)
+
+    add_custom_command(
+      OUTPUT ${MERGED_HEX_NAME}
+      COMMAND
+      ${PYTHON_EXECUTABLE}
+      ${ZEPHYR_BASE}/scripts/mergehex.py
+      -o ${MERGED_HEX_NAME}
+      ${HEX_FILES_TO_MERGE}
+      DEPENDS
+      ${HEX_FILES_TO_MERGE_TARGET}
+      ${logical_target_for_zephyr_elf}
+      )
+
+    add_custom_target(mergehex ALL DEPENDS ${MERGED_HEX_NAME})
+    list(APPEND FLASH_DEPS mergehex)
+  endif()
+
+endif(FIRST_BOILERPLATE_EXECUTION)
 
 if(CONFIG_OUTPUT_PRINT_MEMORY_USAGE)
   # Use --print-memory-usage with the first link.
@@ -1484,7 +1501,7 @@ endif()
 if(EMU_PLATFORM)
   include(${ZEPHYR_BASE}/cmake/emu/${EMU_PLATFORM}.cmake)
 else()
-  add_custom_target(run
+  add_custom_target(${IMAGE}run
     COMMAND
     ${CMAKE_COMMAND} -E echo
     "==================================================="
@@ -1494,7 +1511,7 @@ else()
 endif()
 
 add_subdirectory(cmake/flash)
-add_subdirectory(cmake/usage)
+# TODO what to do about cmake/usage?
 add_subdirectory(cmake/reports)
 
 if(CONFIG_ASSERT AND (NOT CONFIG_FORCE_NO_ASSERT))

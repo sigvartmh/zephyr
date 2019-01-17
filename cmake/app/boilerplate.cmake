@@ -35,42 +35,66 @@ if(NOT (${CMAKE_VERSION} VERSION_LESS "3.13.0"))
   cmake_policy(SET CMP0079 OLD)
 endif()
 
-define_property(GLOBAL PROPERTY ZEPHYR_LIBS
-    BRIEF_DOCS "Global list of all Zephyr CMake libs that should be linked in"
-    FULL_DOCS  "Global list of all Zephyr CMake libs that should be linked in.
+get_property(IMAGE GLOBAL PROPERTY IMAGE)
+
+if(IMAGE)
+  set(FIRST_BOILERPLATE_EXECUTION 0)
+else()
+  set(FIRST_BOILERPLATE_EXECUTION 1)
+endif()
+
+if (NOT FIRST_BOILERPLATE_EXECUTION)
+  # Clear the Kconfig namespace of the other image.
+  # Since the CMake context of each subsequent image is loaded by "add_subdirectory"
+  # the Kconfig namespace is automatically restored by CMake.
+  get_cmake_property(names VARIABLES)
+  foreach (name ${names})
+    if("${name}" MATCHES "^CONFIG_")
+      # When a variable starts with 'CONFIG_' it is assumed to be a
+      # Kconfig symbol.
+      unset(${name})
+    endif()
+  endforeach()
+endif()
+
+define_property(GLOBAL PROPERTY ${IMAGE}ZEPHYR_LIBS
+    BRIEF_DOCS "Image-global list of all Zephyr CMake libs that should be linked in"
+    FULL_DOCS  "Image-global list of all Zephyr CMake libs that should be linked in
 zephyr_library() appends libs to this list.")
-set_property(GLOBAL PROPERTY ZEPHYR_LIBS "")
+set_property(GLOBAL PROPERTY ${IMAGE}ZEPHYR_LIBS "")
 
-define_property(GLOBAL PROPERTY ZEPHYR_INTERFACE_LIBS
-    BRIEF_DOCS "Global list of all Zephyr interface libs that should be linked in."
-    FULL_DOCS  "Global list of all Zephyr interface libs that should be linked in.
+define_property(GLOBAL PROPERTY ${IMAGE}ZEPHYR_INTERFACE_LIBS
+    BRIEF_DOCS "Image-global list of all Zephyr interface libs that should be linked in."
+    FULL_DOCS  "Image-global list of all Zephyr interface libs that should be linked in.
 zephyr_interface_library_named() appends libs to this list.")
-set_property(GLOBAL PROPERTY ZEPHYR_INTERFACE_LIBS "")
+set_property(GLOBAL PROPERTY ${IMAGE}ZEPHYR_INTERFACE_LIBS "")
 
-define_property(GLOBAL PROPERTY GENERATED_KERNEL_OBJECT_FILES
+define_property(GLOBAL PROPERTY ${IMAGE}GENERATED_KERNEL_OBJECT_FILES
   BRIEF_DOCS "Object files that are generated after Zephyr has been linked once."
   FULL_DOCS "\
 Object files that are generated after Zephyr has been linked once.\
 May include mmu tables, etc."
   )
-set_property(GLOBAL PROPERTY GENERATED_KERNEL_OBJECT_FILES "")
+set_property(GLOBAL PROPERTY ${IMAGE}GENERATED_KERNEL_OBJECT_FILES "")
 
-define_property(GLOBAL PROPERTY GENERATED_KERNEL_SOURCE_FILES
+define_property(GLOBAL PROPERTY ${IMAGE}GENERATED_KERNEL_SOURCE_FILES
   BRIEF_DOCS "Source files that are generated after Zephyr has been linked once."
   FULL_DOCS "\
 Source files that are generated after Zephyr has been linked once.\
 May include isr_tables.c etc."
   )
-set_property(GLOBAL PROPERTY GENERATED_KERNEL_SOURCE_FILES "")
+set_property(GLOBAL PROPERTY ${IMAGE}GENERATED_KERNEL_SOURCE_FILES "")
 
-set(APPLICATION_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR} CACHE PATH "Application Source Directory")
-set(APPLICATION_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR} CACHE PATH "Application Binary Directory")
+set(APPLICATION_SOURCE_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(APPLICATION_BINARY_DIR ${CMAKE_CURRENT_BINARY_DIR})
+
+message(STATUS "Using application from '${APPLICATION_SOURCE_DIR}'")
 
 set(__build_dir ${CMAKE_CURRENT_BINARY_DIR}/zephyr)
 
 set(PROJECT_BINARY_DIR ${__build_dir})
 
-add_custom_target(code_data_relocation_target)
+add_custom_target(${IMAGE}code_data_relocation_target)
 
 # CMake's 'project' concept has proven to not be very useful for Zephyr
 # due in part to how Zephyr is organized and in part to it not fitting well
@@ -115,159 +139,169 @@ if(${CMAKE_CURRENT_SOURCE_DIR} STREQUAL ${CMAKE_CURRENT_BINARY_DIR})
  Please specify a build directory, e.g. cmake -Bbuild -H.")
 endif()
 
-add_custom_target(
-  pristine
-  COMMAND ${CMAKE_COMMAND} -P ${ZEPHYR_BASE}/cmake/pristine.cmake
-  # Equivalent to rm -rf build/*
+if(FIRST_BOILERPLATE_EXECUTION)
+  add_custom_target(
+    pristine
+    COMMAND ${CMAKE_COMMAND} -P ${ZEPHYR_BASE}/cmake/pristine.cmake
+    # Equivalent to rm -rf build/*
   )
 
-# The BOARD can be set by 3 sources. Through environment variables,
-# through the cmake CLI, and through CMakeLists.txt.
-#
-# CLI has the highest precedence, then comes environment variables,
-# and then finally CMakeLists.txt.
-#
-# A user can ignore all the precedence rules if he simply always uses
-# the same source. E.g. always specifies -DBOARD= on the command line,
-# always has an environment variable set, or always has a set(BOARD
-# foo) line in his CMakeLists.txt and avoids mixing sources.
-#
-# The selected BOARD can be accessed through the variable 'BOARD'.
+  # The BOARD can be set by 3 sources. Through environment variables,
+  # through the cmake CLI, and through CMakeLists.txt.
+  #
+  # CLI has the highest precedence, then comes environment variables,
+  # and then finally CMakeLists.txt.
+  #
+  # A user can ignore all the precedence rules if he simply always uses
+  # the same source. E.g. always specifies -DBOARD= on the command line,
+  # always has an environment variable set, or always has a set(BOARD
+  # foo) line in his CMakeLists.txt and avoids mixing sources.
+  #
+  # The selected BOARD can be accessed through the variable 'BOARD'.
 
-# Read out the cached board value if present
-get_property(cached_board_value CACHE BOARD PROPERTY VALUE)
+  # Read out the cached board value if present
+  get_property(cached_board_value CACHE BOARD PROPERTY VALUE)
 
-# There are actually 4 sources, the three user input sources, and the
-# previously used value (CACHED_BOARD). The previously used value has
-# precedence, and if we detect that the user is trying to change the
-# value we give him a warning about needing to clean the build
-# directory to be able to change boards.
+  # There are actually 4 sources, the three user input sources, and the
+  # previously used value (CACHED_BOARD). The previously used value has
+  # precedence, and if we detect that the user is trying to change the
+  # value we give him a warning about needing to clean the build
+  # directory to be able to change boards.
 
-set(board_cli_argument ${cached_board_value}) # Either new or old
-if(board_cli_argument STREQUAL CACHED_BOARD)
-  # We already have a CACHED_BOARD so there is no new input on the CLI
-  unset(board_cli_argument)
-endif()
-
-set(board_app_cmake_lists ${BOARD})
-if(cached_board_value STREQUAL BOARD)
-  # The app build scripts did not set a default, The BOARD we are
-  # reading is the cached value from the CLI
-  unset(board_app_cmake_lists)
-endif()
-
-if(CACHED_BOARD)
-  # Warn the user if it looks like he is trying to change the board
-  # without cleaning first
-  if(board_cli_argument)
-    if(NOT (CACHED_BOARD STREQUAL board_cli_argument))
-      message(WARNING "The build directory must be cleaned pristinely when changing boards")
-      # TODO: Support changing boards without requiring a clean build
-    endif()
+  set(board_cli_argument ${cached_board_value}) # Either new or old
+  if(board_cli_argument STREQUAL CACHED_BOARD)
+    # We already have a CACHED_BOARD so there is no new input on the CLI
+    unset(board_cli_argument)
   endif()
 
-  set(BOARD ${CACHED_BOARD})
-elseif(board_cli_argument)
-  set(BOARD ${board_cli_argument})
-
-elseif(DEFINED ENV{BOARD})
-  set(BOARD $ENV{BOARD})
-
-elseif(board_app_cmake_lists)
-  set(BOARD ${board_app_cmake_lists})
-
-else()
-  message(FATAL_ERROR "BOARD is not being defined on the CMake command-line in the environment or by the app.")
-endif()
-
-assert(BOARD "BOARD not set")
-message(STATUS "Selected BOARD ${BOARD}")
-
-# Store the selected board in the cache
-set(CACHED_BOARD ${BOARD} CACHE STRING "Selected board")
-
-# The SHIELD can be set by 3 sources. Through environment variables,
-# through the cmake CLI, and through CMakeLists.txt.
-#
-# CLI has the highest precedence, then comes environment variables,
-# and then finally CMakeLists.txt.
-#
-# A user can ignore all the precedence rules if he simply always uses
-# the same source. E.g. always specifies -DSHIELD= on the command line,
-# always has an environment variable set, or always has a set(SHIELD
-# foo) line in his CMakeLists.txt and avoids mixing sources.
-#
-# The selected SHIELD can be accessed through the variable 'SHIELD'.
-
-# Read out the cached shield value if present
-get_property(cached_shield_value CACHE SHIELD PROPERTY VALUE)
-
-# There are actually 4 sources, the three user input sources, and the
-# previously used value (CACHED_SHIELD). The previously used value has
-# precedence, and if we detect that the user is trying to change the
-# value we give him a warning about needing to clean the build
-# directory to be able to change shields.
-
-set(shield_cli_argument ${cached_shield_value}) # Either new or old
-if(shield_cli_argument STREQUAL CACHED_SHIELD)
-  # We already have a CACHED_SHIELD so there is no new input on the CLI
-  unset(shield_cli_argument)
-endif()
-
-set(shield_app_cmake_lists ${SHIELD})
-if(cached_shield_value STREQUAL SHIELD)
-  # The app build scripts did not set a default, The SHIELD we are
-  # reading is the cached value from the CLI
-  unset(shield_app_cmake_lists)
-endif()
-
-if(CACHED_SHIELD)
-  # Warn the user if it looks like he is trying to change the shield
-  # without cleaning first
-  if(shield_cli_argument)
-    if(NOT (CACHED_SHIELD STREQUAL shield_cli_argument))
-      message(WARNING "The build directory must be cleaned pristinely when changing shields")
-      # TODO: Support changing shields without requiring a clean build
-    endif()
+  set(board_app_cmake_lists ${BOARD})
+  if(cached_board_value STREQUAL BOARD)
+    # The app build scripts did not set a default, The BOARD we are
+    # reading is the cached value from the CLI
+    unset(board_app_cmake_lists)
   endif()
 
-  set(SHIELD ${CACHED_SHIELD})
-elseif(shield_cli_argument)
-  set(SHIELD ${shield_cli_argument})
+  if(CACHED_BOARD)
+    # Warn the user if it looks like he is trying to change the board
+    # without cleaning first
+    if(board_cli_argument)
+      if(NOT (CACHED_BOARD STREQUAL board_cli_argument))
+        message(WARNING "The build directory must be cleaned pristinely when changing boards")
+        # TODO: Support changing boards without requiring a clean build
+      endif()
+    endif()
 
-elseif(DEFINED ENV{SHIELD})
-  set(SHIELD $ENV{SHIELD})
 
-elseif(shield_app_cmake_lists)
-  set(SHIELD ${shield_app_cmake_lists})
-endif()
+    set(BOARD ${CACHED_BOARD})
+  elseif(board_cli_argument)
+    set(BOARD ${board_cli_argument})
 
-# Store the selected shield in the cache
-set(CACHED_SHIELD ${SHIELD} CACHE STRING "Selected shield")
+  elseif(DEFINED ENV{BOARD})
+    set(BOARD $ENV{BOARD})
 
-# 'BOARD_ROOT' is a prioritized list of directories where boards may
-# be found. It always includes ${ZEPHYR_BASE} at the lowest priority.
-list(APPEND BOARD_ROOT ${ZEPHYR_BASE})
+  elseif(board_app_cmake_lists)
+    set(BOARD ${board_app_cmake_lists})
 
-if(NOT SOC_ROOT)
-  set(SOC_DIR ${ZEPHYR_BASE}/soc)
-else()
-  set(SOC_DIR ${SOC_ROOT}/soc)
-endif()
+  else()
+    message(FATAL_ERROR "BOARD is not being defined on the CMake command-line in the environment or by the app.")
+  endif()
 
-# Use BOARD to search for a '_defconfig' file.
-# e.g. zephyr/boards/arm/96b_carbon_nrf51/96b_carbon_nrf51_defconfig.
-# When found, use that path to infer the ARCH we are building for.
-foreach(root ${BOARD_ROOT})
-  # NB: find_path will return immediately if the output variable is
-  # already set
-  find_path(BOARD_DIR
-    NAMES ${BOARD}_defconfig
-    PATHS ${root}/boards/*/*
-    NO_DEFAULT_PATH
-    )
-  if(BOARD_DIR AND NOT (${root} STREQUAL ${ZEPHYR_BASE}))
-    set(USING_OUT_OF_TREE_BOARD 1)
+  assert(BOARD "BOARD not set")
+  message(STATUS "Selected BOARD ${BOARD}")
+
+  # Store the selected board in the cache
+  set(CACHED_BOARD ${BOARD} CACHE STRING "Selected board")
+
+  # 'BOARD_ROOT' is a prioritized list of directories where boards may
+  # be found. It always includes ${ZEPHYR_BASE} at the lowest priority.
+  list(APPEND BOARD_ROOT ${ZEPHYR_BASE})
+
+  # Use BOARD to search for a '_defconfig' file.
+  # e.g. zephyr/boards/arm/96b_carbon_nrf51/96b_carbon_nrf51_defconfig.
+  # When found, use that path to infer the ARCH we are building for.
+  foreach(root ${BOARD_ROOT})
+    # NB: find_path will return immediately if the output variable is
+    # already set
+    find_path(BOARD_DIR
+      NAMES ${BOARD}_defconfig
+      PATHS ${root}/boards/*/*
+      NO_DEFAULT_PATH
+      )
+    if(BOARD_DIR AND NOT (${root} STREQUAL ${ZEPHYR_BASE}))
+      set(USING_OUT_OF_TREE_BOARD 1)
+    endif()
+  endforeach()
+
+  if(NOT BOARD_DIR)
+    message("No board named '${BOARD}' found")
+    print_usage()
+    unset(CACHED_BOARD CACHE)
+    message(FATAL_ERROR "Invalid usage")
+  endif()
+
+  # The SHIELD can be set by 3 sources. Through environment variables,
+  # through the cmake CLI, and through CMakeLists.txt.
+  #
+  # CLI has the highest precedence, then comes environment variables,
+  # and then finally CMakeLists.txt.
+  #
+  # A user can ignore all the precedence rules if he simply always uses
+  # the same source. E.g. always specifies -DSHIELD= on the command line,
+  # always has an environment variable set, or always has a set(SHIELD
+  # foo) line in his CMakeLists.txt and avoids mixing sources.
+  #
+  # The selected SHIELD can be accessed through the variable 'SHIELD'.
+
+  # Read out the cached shield value if present
+  get_property(cached_shield_value CACHE SHIELD PROPERTY VALUE)
+
+  # There are actually 4 sources, the three user input sources, and the
+  # previously used value (CACHED_SHIELD). The previously used value has
+  # precedence, and if we detect that the user is trying to change the
+  # value we give him a warning about needing to clean the build
+  # directory to be able to change shields.
+
+  set(shield_cli_argument ${cached_shield_value}) # Either new or old
+  if(shield_cli_argument STREQUAL CACHED_SHIELD)
+	# We already have a CACHED_SHIELD so there is no new input on the CLI
+	unset(shield_cli_argument)
+  endif()
+
+  set(shield_app_cmake_lists ${SHIELD})
+  if(cached_shield_value STREQUAL SHIELD)
+	# The app build scripts did not set a default, The SHIELD we are
+	# reading is the cached value from the CLI
+	unset(shield_app_cmake_lists)
+  endif()
+
+  if(CACHED_SHIELD)
+	# Warn the user if it looks like he is trying to change the shield
+	# without cleaning first
+	if(shield_cli_argument)
+      if(NOT (CACHED_SHIELD STREQUAL shield_cli_argument))
+		message(WARNING "The build directory must be cleaned pristinely when changing shields")
+		# TODO: Support changing shields without requiring a clean build
+      endif()
+	endif()
+
+	set(SHIELD ${CACHED_SHIELD})
+  elseif(shield_cli_argument)
+	set(SHIELD ${shield_cli_argument})
+
+  elseif(DEFINED ENV{SHIELD})
+	set(SHIELD $ENV{SHIELD})
+
+  elseif(shield_app_cmake_lists)
+	set(SHIELD ${shield_app_cmake_lists})
+  endif()
+
+  # Store the selected shield in the cache
+  set(CACHED_SHIELD ${SHIELD} CACHE STRING "Selected shield")
+
+  if(NOT SOC_ROOT)
+    set(SOC_DIR ${ZEPHYR_BASE}/soc)
+  else()
+    set(SOC_DIR ${SOC_ROOT}/soc)
   endif()
 
   set(shield_dir ${root}/boards/shields)
@@ -311,43 +345,93 @@ foreach(root ${BOARD_ROOT})
       endif()
     endforeach()
   endif()
-endforeach()
 
-if(NOT BOARD_DIR)
-  message("No board named '${BOARD}' found")
-  print_usage()
-  unset(CACHED_BOARD CACHE)
-  message(FATAL_ERROR "Invalid usage")
-endif()
+  if(DEFINED SHIELD AND DEFINED NOT_FOUND_SHIELD_LIST)
+	foreach (s ${NOT_FOUND_SHIELD_LIST})
+      message("No shield named '${s}' found")
+	endforeach()
+	print_usage()
+	unset(CACHED_SHIELD CACHE)
+	message(FATAL_ERROR "Invalid usage")
+  endif()
 
-if(DEFINED SHIELD AND DEFINED NOT_FOUND_SHIELD_LIST)
-  foreach (s ${NOT_FOUND_SHIELD_LIST})
-    message("No shield named '${s}' found")
-  endforeach()
-  print_usage()
-  unset(CACHED_SHIELD CACHE)
-  message(FATAL_ERROR "Invalid usage")
-endif()
+  get_filename_component(BOARD_ARCH_DIR ${BOARD_DIR}      DIRECTORY)
+  get_filename_component(BOARD_FAMILY   ${BOARD_DIR}      NAME)
+  get_filename_component(ARCH           ${BOARD_ARCH_DIR} NAME)
 
-get_filename_component(BOARD_ARCH_DIR ${BOARD_DIR}      DIRECTORY)
-get_filename_component(BOARD_FAMILY   ${BOARD_DIR}      NAME)
-get_filename_component(ARCH           ${BOARD_ARCH_DIR} NAME)
+  # Prevent CMake from testing the toolchain
+  set(CMAKE_C_COMPILER_FORCED   1)
+  set(CMAKE_CXX_COMPILER_FORCED 1)
 
-if(CONF_FILE)
-  # CONF_FILE has either been specified on the cmake CLI or is already
-  # in the CMakeCache.txt. This has precedence over the environment
-  # variable CONF_FILE and the default prj.conf
-elseif(DEFINED ENV{CONF_FILE})
-  set(CONF_FILE $ENV{CONF_FILE})
+  include(${ZEPHYR_BASE}/cmake/host-tools.cmake)
 
-elseif(COMMAND set_conf_file)
-  set_conf_file()
+  # DTS should be close to kconfig because CONFIG_ variables from
+  # kconfig and dts should be available at the same time.
+  #
+  # The DT system uses a C preprocessor for it's code generation needs.
+  # This creates an awkward chicken-and-egg problem, because we don't
+  # always know exactly which toolchain the user needs until we know
+  # more about the target, e.g. after DT and Kconfig.
+  #
+  # To resolve this we find "some" C toolchain, configure it generically
+  # with the minimal amount of configuration needed to have it
+  # preprocess DT sources, and then, after we have finished processing
+  # both DT and Kconfig we complete the target-specific configuration,
+  # and possibly change the toolchain.
+  include(${ZEPHYR_BASE}/cmake/generic_toolchain.cmake)
 
-elseif(EXISTS   ${APPLICATION_SOURCE_DIR}/prj_${BOARD}.conf)
-  set(CONF_FILE ${APPLICATION_SOURCE_DIR}/prj_${BOARD}.conf)
+  string(REPLACE ";" " " BOARD_ROOT_SPACE_SEPARATED "${BOARD_ROOT}")
+  string(REPLACE ";" " " SHIELD_LIST_SPACE_SEPARATED "${SHIELD_LIST}")
+  # NB: The reason it is 'usage' and not help is that CMake already
+  # defines a target 'help'
+  add_custom_target(
+    usage
+    ${CMAKE_COMMAND}
+    -DBOARD_ROOT_SPACE_SEPARATED=${BOARD_ROOT_SPACE_SEPARATED}
+	-DSHIELD_LIST_SPACE_SEPARATED=${SHIELD_LIST_SPACE_SEPARATED}
+    -P ${ZEPHYR_BASE}/cmake/usage/usage.cmake
+    )
 
-elseif(EXISTS   ${APPLICATION_SOURCE_DIR}/prj.conf)
-  set(CONF_FILE ${APPLICATION_SOURCE_DIR}/prj.conf)
+  if(CONF_FILE)
+    #   # CONF_FILE has either been specified on the cmake CLI or is already
+    #   # in the CMakeCache.txt. This has precedence over the environment
+    #   # variable CONF_FILE and the default prj.conf
+  elseif(DEFINED ENV{CONF_FILE})
+    set(CONF_FILE $ENV{CONF_FILE})
+  elseif(COMMAND set_conf_file)
+    set_conf_file()
+  elseif(EXISTS   ${APPLICATION_SOURCE_DIR}/prj_${BOARD}.conf)
+    set(CONF_FILE ${APPLICATION_SOURCE_DIR}/prj_${BOARD}.conf)
+  elseif(EXISTS   ${APPLICATION_SOURCE_DIR}/prj.conf)
+    set(CONF_FILE ${APPLICATION_SOURCE_DIR}/prj.conf)
+  endif()
+
+  if(DTC_OVERLAY_FILE)
+    #   # DTC_OVERLAY_FILE has either been specified on the cmake CLI or is already
+    #   # in the CMakeCache.txt. This has precedence over the environment
+    #   # variable DTC_OVERLAY_FILE
+  elseif(DEFINED ENV{DTC_OVERLAY_FILE})
+    set(DTC_OVERLAY_FILE $ENV{DTC_OVERLAY_FILE})
+  elseif(EXISTS          ${APPLICATION_SOURCE_DIR}/${BOARD}.overlay)
+    set(DTC_OVERLAY_FILE ${APPLICATION_SOURCE_DIR}/${BOARD}.overlay)
+  endif()
+else() # NOT FIRST_BOILERPLATE_EXECUTION
+
+  # Have the child image select the same BOARD that was selected by
+  # the parent.
+  set(BOARD ${CACHED_BOARD})
+
+  unset(CONF_FILE)
+  if(EXISTS       ${APPLICATION_SOURCE_DIR}/prj_${BOARD}.conf)
+    set(CONF_FILE ${APPLICATION_SOURCE_DIR}/prj_${BOARD}.conf)
+  elseif(EXISTS   ${APPLICATION_SOURCE_DIR}/prj.conf)
+    set(CONF_FILE ${APPLICATION_SOURCE_DIR}/prj.conf)
+  endif()
+
+  unset(DTC_OVERLAY_FILE)
+  if(EXISTS              ${APPLICATION_SOURCE_DIR}/${BOARD}.overlay)
+    set(DTC_OVERLAY_FILE ${APPLICATION_SOURCE_DIR}/${BOARD}.overlay)
+  endif()
 endif()
 
 set(CONF_FILE ${CONF_FILE} CACHE STRING "If desired, you can build the application using\
@@ -355,42 +439,12 @@ the configuration settings specified in an alternate .conf file using this param
 These settings will override the settings in the application’s .config file or its default .conf file.\
 Multiple files may be listed, e.g. CONF_FILE=\"prj1.conf prj2.conf\"")
 
-if(DTC_OVERLAY_FILE)
-  # DTC_OVERLAY_FILE has either been specified on the cmake CLI or is already
-  # in the CMakeCache.txt. This has precedence over the environment
-  # variable DTC_OVERLAY_FILE
-elseif(DEFINED ENV{DTC_OVERLAY_FILE})
-  set(DTC_OVERLAY_FILE $ENV{DTC_OVERLAY_FILE})
-elseif(EXISTS          ${APPLICATION_SOURCE_DIR}/${BOARD}.overlay)
-  set(DTC_OVERLAY_FILE ${APPLICATION_SOURCE_DIR}/${BOARD}.overlay)
-endif()
-
 set(DTC_OVERLAY_FILE ${DTC_OVERLAY_FILE} CACHE STRING "If desired, you can \
 build the application using the DT configuration settings specified in an \
 alternate .overlay file using this parameter. These settings will override the \
 settings in the board's .dts file. Multiple files may be listed, e.g. \
 DTC_OVERLAY_FILE=\"dts1.overlay dts2.overlay\"")
 
-# Prevent CMake from testing the toolchain
-set(CMAKE_C_COMPILER_FORCED   1)
-set(CMAKE_CXX_COMPILER_FORCED 1)
-
-include(${ZEPHYR_BASE}/cmake/host-tools.cmake)
-
-# DTS should be close to kconfig because CONFIG_ variables from
-# kconfig and dts should be available at the same time.
-#
-# The DT system uses a C preprocessor for it's code generation needs.
-# This creates an awkward chicken-and-egg problem, because we don't
-# always know exactly which toolchain the user needs until we know
-# more about the target, e.g. after DT and Kconfig.
-#
-# To resolve this we find "some" C toolchain, configure it generically
-# with the minimal amount of configuration needed to have it
-# preprocess DT sources, and then, after we have finished processing
-# both DT and Kconfig we complete the target-specific configuration,
-# and possibly change the toolchain.
-include(${ZEPHYR_BASE}/cmake/generic_toolchain.cmake)
 include(${ZEPHYR_BASE}/cmake/kconfig.cmake)
 
 set(SOC_NAME   ${CONFIG_SOC})
@@ -455,7 +509,7 @@ endif()
 # modified by the entry point ${APPLICATION_SOURCE_DIR}/CMakeLists.txt
 # that was specified when cmake was called.
 zephyr_library_named(app)
-set_property(TARGET app PROPERTY ARCHIVE_OUTPUT_DIRECTORY app)
+set_property(TARGET ${IMAGE}app PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${IMAGE}app)
 
 add_subdirectory(${ZEPHYR_BASE} ${__build_dir})
 
@@ -466,17 +520,35 @@ add_subdirectory(${ZEPHYR_BASE} ${__build_dir})
 # done after 'add_subdirectory(${ZEPHYR_BASE} ${__build_dir})'
 # because interface libraries are defined while processing that
 # subdirectory.
-get_property(ZEPHYR_INTERFACE_LIBS_PROPERTY GLOBAL PROPERTY ZEPHYR_INTERFACE_LIBS)
+get_property(ZEPHYR_INTERFACE_LIBS_PROPERTY GLOBAL PROPERTY ${IMAGE}ZEPHYR_INTERFACE_LIBS)
 foreach(boilerplate_lib ${ZEPHYR_INTERFACE_LIBS_PROPERTY})
   # Linking 'app' with 'boilerplate_lib' causes 'app' to inherit the INTERFACE
   # properties of 'boilerplate_lib'. The most common property is 'include
   # directories', but it is also possible to have defines and compiler
   # flags in the interface of a library.
-  #
-  string(TOUPPER ${boilerplate_lib} boilerplate_lib_upper_case) # Support lowercase lib names
+
+  # 'boilerplate_lib' is formatted as '0_mbedtls' (for instance). But
+  # the Kconfig options are formatted as
+  # 'CONFIG_APP_LINK_WITH_MBEDTLS'. So we need to strip the '0_' and
+  # convert to upper case.
+
+  # Match the non-image'ified library name. E.g. '1_mylib' -> 'mylib'.
+  set(image_regex "^${IMAGE}(.*)")
+  string(REGEX MATCH
+	${image_regex}
+	unused_out_var
+	${boilerplate_lib}
+	)
+  if(CMAKE_MATCH_1)
+	set(boilerplate_lib_without_image ${CMAKE_MATCH_1})
+  else()
+	message(FATAL_ERROR "Internal error. Expected '${boilerplate_lib}' to match '${image_regex}'")
+  endif()
+
+  string(TOUPPER ${boilerplate_lib_without_image} boilerplate_lib_upper_case) # Support lowercase lib names
   target_link_libraries_ifdef(
     CONFIG_APP_LINK_WITH_${boilerplate_lib_upper_case}
-    app
+    ${IMAGE}app
     PUBLIC
     ${boilerplate_lib}
     )
