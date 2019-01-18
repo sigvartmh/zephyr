@@ -513,6 +513,74 @@ set_property(TARGET ${IMAGE}app PROPERTY ARCHIVE_OUTPUT_DIRECTORY ${IMAGE}app)
 
 add_subdirectory(${ZEPHYR_BASE} ${__build_dir})
 
+if(EXISTS ${APPLICATION_SOURCE_DIR}/pm.yaml)
+  zephyr_get_include_directories_for_lang(C current_includes)
+  get_property(current_defines GLOBAL PROPERTY PROPERTY_LINKER_SCRIPT_DEFINES)
+  set(pre_partition_mananger_conf
+    ${PROJECT_BINARY_DIR}/include/generated/pm.yaml.pre)
+  set(partition_manager_conf_target ${IMAGE}pm_conf_target)
+  add_custom_command(
+    OUTPUT ${pre_partition_mananger_conf}
+    COMMAND ${CMAKE_C_COMPILER}
+    -x assembler-with-cpp
+    ${NOSTDINC_F}
+    ${NOSYSDEF_CFLAG}
+    ${current_includes}
+    ${current_defines}
+    -E ${APPLICATION_SOURCE_DIR}/pm.yaml
+    -P # Prevent generation of debug `#line' directives.
+    ${partition_manager_override_include}
+    -o ${pre_partition_mananger_conf}
+    VERBATIM
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+    )
+  add_custom_target(
+    ${partition_manager_conf_target}
+    DEPENDS
+    ${pre_partition_mananger_conf}
+    )
+  set_property(
+    GLOBAL APPEND PROPERTY
+    PARTITION_MANAGER_CONFIG_FILES
+    ${pre_partition_mananger_conf}
+    )
+  set_property(
+    GLOBAL APPEND PROPERTY
+    PARTITION_MANAGER_CONFIG_TARGETS
+    ${partition_manager_conf_target}
+    )
+endif()
+
+if(FIRST_BOILERPLATE_EXECUTION)
+  get_property(
+      partition_manager_config_files
+    GLOBAL PROPERTY
+    PARTITION_MANAGER_CONFIG_FILES
+    )
+  if(partition_manager_config_files)
+    get_property(
+      partition_manager_config_targets
+      GLOBAL PROPERTY
+      PARTITION_MANAGER_CONFIG_TARGETS
+      )
+    file(GLOB_RECURSE autoconf_files "${PROJECT_BINARY_DIR}/**/autoconf.h")
+    add_custom_target(
+      PARTITION_MANAGER_TARGET
+      # For every input_file
+      COMMAND
+      ${PYTHON_EXECUTABLE}
+      ${ZEPHYR_BASE}/scripts/partition_manager.py
+      -i ${partition_manager_config_files}
+      -c ${autoconf_files}
+      -o override.h
+      --app-override-file ${PROJECT_BINARY_DIR}/include/generated/override.h
+      -s 1048576
+      DEPENDS
+      ${partition_manager_config_targets}
+      )
+  endif()
+endif()
+
 # Link 'app' with the Zephyr interface libraries.
 #
 # NB: This must be done in boilerplate.cmake because 'app' can only be
