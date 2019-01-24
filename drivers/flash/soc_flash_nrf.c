@@ -18,7 +18,7 @@
 
 #ifdef CONFIG_SOC_NRF9160
 #ifndef CONFIG_ARM_NONSECURE_FIRMWARE
-#error Flash driver supports NS mode only!
+//#error Flash driver supports NS mode only!
 #endif
 #endif
 
@@ -105,7 +105,13 @@ static inline bool is_aligned_32(u32_t data)
 
 static inline bool is_regular_addr_valid(off_t addr, size_t len)
 {
-	if (addr >= NRF_FICR->CODEPAGESIZE * NRF_FICR->CODESIZE ||
+	if (addr + len > CODEPAGESIZE * CODESIZE || addr < 0) {
+		return false;
+	}
+
+	return true;
+	/*
+	if (addr >= ((NRF_FICR->CODEPAGESIZE) * NRF_FICR->CODESIZE) ||
 	    addr < 0 ||
 	    len > NRF_FICR->CODEPAGESIZE * NRF_FICR->CODESIZE ||
 	    addr + len > NRF_FICR->CODEPAGESIZE * NRF_FICR->CODESIZE) {
@@ -113,6 +119,7 @@ static inline bool is_regular_addr_valid(off_t addr, size_t len)
 	}
 
 	return true;
+	*/
 }
 
 
@@ -146,7 +153,7 @@ static void nvmc_wait_ready(void)
 }
 
 enum nvmc_config {
-#ifdef CONFIG_SOC_NRF9160
+#if (defined(CONFIG_SOC_NRF9160) && defined(CONFIG_ARM_NONSECURE_FIRMWARE))
 	REN = NVMC_CONFIGNS_WEN_Ren << NVMC_CONFIGNS_WEN_Pos,
 	WEN = NVMC_CONFIGNS_WEN_Wen << NVMC_CONFIGNS_WEN_Pos,
 	EEN = NVMC_CONFIGNS_WEN_Een << NVMC_CONFIGNS_WEN_Pos,
@@ -159,7 +166,8 @@ enum nvmc_config {
 
 static u32_t nvmc_config_set(enum nvmc_config mode)
 {
-#ifdef CONFIG_SOC_NRF9160
+#if (defined(CONFIG_SOC_NRF9160) && defined(CONFIG_ARM_NONSECURE_FIRMWARE))
+//#ifdef CONFIG_SOC_NRF9160
 	const u32_t cfg = NRF_NVMC->CONFIGNS;
 	NRF_NVMC->CONFIGNS = mode;
 #else
@@ -498,6 +506,7 @@ static int erase_op(void *context)
 
 	do {
 #ifdef CONFIG_SOC_NRF9160
+		printk("Flash: 0x%x\n\r", e_ctx->flash_addr);
 		*(u32_t *)e_ctx->flash_addr = 0xFFFFFFFF;
 #else
 		NRF_NVMC->ERASEPAGE = e_ctx->flash_addr;

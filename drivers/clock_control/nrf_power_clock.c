@@ -17,14 +17,6 @@
 #include <drivers/clock_control/nrf_clock_control.h>
 #endif
 
-#if defined(CONFIG_SOC_SERIES_NRF91X)
-#define POWER_CLOCK_IRQn CLOCK_POWER_IRQn
-#endif
-
-#if defined(CONFIG_SOC_SERIES_NRF51X) || defined(CONFIG_SOC_SERIES_NRF52X)
-#define LFCLK_CALIBRATED
-#endif
-
 static u8_t m16src_ref;
 static u8_t m16src_grd;
 static u8_t k32src_initialized;
@@ -228,7 +220,6 @@ static int _k32src_start(struct device *dev, clock_control_subsys_t sub_system)
 	/* If RC selected, calibrate and start timer for consecutive
 	 * calibrations.
 	 */
-#ifdef LFCLK_CALIBRATED
 	nrf_clock_int_disable(NRF_CLOCK_INT_DONE_MASK |
 			      NRF_CLOCK_INT_CTTO_MASK);
 	NRF_CLOCK->EVENTS_DONE = 0;
