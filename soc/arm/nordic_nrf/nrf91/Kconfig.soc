@@ -58,8 +58,8 @@ choice
 prompt "nRF91x MCU Selection"
 	depends on SOC_SERIES_NRF91X
 
-config SOC_NRF9160_XXAA
-	bool "NRF9160_XXAA"
+config SOC_NRF9160_SICA
+	bool "NRF9160_SICA"
 	select SOC_NRF9160
 
 endchoice

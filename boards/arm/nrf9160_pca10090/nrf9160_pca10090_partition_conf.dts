@@ -4,27 +4,29 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#if defined(CONFIG_ARM_TRUSTZONE_M)
-
 /*
- * Zephyr build with TrustZone-M support, implies building
- * Secure and Non-Secure images.
- * - Secure image will be placed in slot0, and use sram0
- *   for system memory.
- * - Non-Secure image will be placed in slot0_ns, and use
- *   sram0_ns for system memory.
+ * Default Flash planning for nRF9160_pca10090.
  *
- * Depending on whether MCUboot is present, slot0 will start
- * - from address 0x00000000 (MCUboot not present),
- * - from address 0x00010000 (MCUboot present).
+ * Zephyr build for nRF9160 with ARM TrustZone-M support,
+ * implies building Secure and Non-Secure Zephyr images.
+ *
+ * Secure image will be placed, by default, in flash0
+ * (or in slot0, if MCUboot is present).
+ * Secure image will use sram0 for system memory.
+ *
+ * Non-Secure image will be placed in slot0_ns, and use
+ * sram0_ns for system memory.
+ *
+ * Note that the Secure image only requires knowledge of
+ * the beginning of the Non-Secure image (not its size).
  */
 
+&flash0 {
+	reg = <0x00000000 DT_SIZE_K(256)>;
+};
+
 &slot0_partition {
-#if defined (CONFIG_BOOTLOADER_MCUBOOT)
 	reg = <0x00010000 0x30000>;
-#else
-	reg = <0x00000000 0x30000>;
-#endif
 };
 
 &slot0_ns_partition {
@@ -39,7 +41,8 @@
 	reg = <0x000b0000 0x40000>;
 };
 
-/* SRAM planning when building with TrustZone-M support
+/* Default SRAM planning when building for nRF9160 with
+ * ARM TrustZone-M support
  * - Lowest 64 kB SRAM allocated to Secure image (sram0).
  * - 64 kB SRAM reserved for and used by the BSD socket
  *   library.
@@ -57,49 +60,3 @@
 &sram0_ns {
 	reg = <0x20020000 DT_SIZE_K(128)>;
 };
-
-#if defined(CONFIG_ARM_SECURE_FIRMWARE)
-/ {
-	chosen {
-		zephyr,code-partition = &slot0_partition;
-		zephyr,sram = &sram0;
-	};
-};
-#endif
-
-#if defined (CONFIG_ARM_NONSECURE_FIRMWARE)
-/ {
-	chosen {
-		zephyr,code-partition = &slot0_ns_partition;
-		zephyr,sram = &sram0_ns;
-	};
-};
-#endif
-
-#else /* CONFIG_ARM_TRUSTZONE_M */
-/*
- * Zephyr build without TrustZone-M support.
- * Image placement is determined by whether
- * MCUboot is present or not (image placement
- * determined with help of MCUboot.overlay).
- */
-&slot0_partition {
-	reg = <0x00010000 0x70000>;
-};
-
-&slot1_partition {
-	reg = <0x00080000 0x70000>;
-};
-
-/* Lowest 64K SRAM reserved for and used
- * by the BSD socket library.
- */
-&sram0_bsd {
-	reg = <0x20000000 DT_SIZE_K(64)>;
-};
-
-&sram0 {
-	reg = <0x20010000 DT_SIZE_K(192)>;
-};
-
-#endif /* CONFIG_ARM_TRUSTZONE_M */

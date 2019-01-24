@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2017 - 2018, Nordic Semiconductor ASA
+ * Copyright (c) 2018, Nordic Semiconductor ASA
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -32,112 +32,138 @@
 #ifndef NRFX_CONFIG_NRF9160_H__
 #define NRFX_CONFIG_NRF9160_H__
 
+/*
+ * The definitions below will provide mappings of base addresses of peripherals
+ * to CMSIS-Core peripheral accessing symbols that are used in nrfx drivers
+ * and HALs. The base addresses are taken from the devicetree so they will be
+ * in the proper domain, Secure or Non-Secure, accordingly to the build target.
+ */
+
 #include <generated_dts_board.h>
 
-/* CONNECTION TO DEVICETREE DTS DTSI */
-#ifdef NVMC_BASE_ADDRESS
-#define NRF_NVMC                       ((NRF_NVMC_Type*) NVMC_BASE_ADDRESS)
+#ifdef DT_NORDIC_NRF_CLOCK_CLOCK_BASE_ADDRESS
+#define NRF_CLOCK \
+        ((NRF_CLOCK_Type *)DT_NORDIC_NRF_CLOCK_CLOCK_BASE_ADDRESS)
 #endif
 
-#ifdef NRF_RTC1_BASE_ADDRESS
-#define NRF_RTC1                       ((NRF_RTC_Type *) NRF_RTC1_BASE_ADDRESS)
-#define NRF5_IRQ_RTC1_IRQn             NRF_RTC1_IRQ
+#ifdef DT_NORDIC_NRF_GPIO_GPIO_0_BASE_ADDRESS
+#define NRF_P0 \
+        ((NRF_GPIO_Type *)DT_NORDIC_NRF_GPIO_GPIO_0_BASE_ADDRESS)
 #endif
 
-#ifdef NRF_CLOCK_BASE_ADDRESS
-#define NRF_CLOCK                      ((NRF_CLOCK_Type*) NRF_CLOCK_BASE_ADDRESS)
-#define NRF5_IRQ_POWER_CLOCK_IRQn      NRF_CLOCK_IRQ
+#ifdef DT_NORDIC_NRF_GPIOTE_GPIOTE_0_BASE_ADDRESS
+#define NRF_GPIOTE \
+        ((NRF_GPIOTE_Type *)DT_NORDIC_NRF_GPIOTE_GPIOTE_0_BASE_ADDRESS)
 #endif
 
-#ifdef NRF_POWER_BASE_ADDRESS
-#define NRF_POWER                      ((NRF_POWER_Type*) NRF_POWER_BASE_ADDRESS)
-#ifndef NRF5_IRQ_POWER_CLOCK_IRQn      /* shared resource, interrupts defined for the clock */
-#define NRF5_IRQ_POWER_CLOCK_IRQn      NRF_CLOCK_IRQ
-#endif
+#ifdef DT_NORDIC_NRF91_FLASH_CONTROLLER_NVMC_BASE_ADDRESS
+#define NRF_NVMC \
+        ((NRF_NVMC_Type *)DT_NORDIC_NRF91_FLASH_CONTROLLER_NVMC_BASE_ADDRESS)
 #endif
 
-#ifdef SPU_BASE_ADDRESS
-#define NRF_SPU                        ((NRF_SPU_Type*) SPU_BASE_ADDRESS)
+#ifdef DT_NORDIC_NRF_POWER_POWER_BASE_ADDRESS
+#define NRF_POWER \
+        ((NRF_POWER_Type *)DT_NORDIC_NRF_POWER_POWER_BASE_ADDRESS)
 #endif
 
-#ifdef GPIO_0_BASE_ADDRESS
-#define NRF_GPIO                       ((NRF_GPIO_Type*) GPIO_0_BASE_ADDRESS)
+#ifdef DT_NORDIC_NRF_PWM_PWM_0_BASE_ADDRESS
+#define NRF_PWM0 \
+        ((NRF_PWM_Type *)DT_NORDIC_NRF_PWM_PWM_0_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_PWM_PWM_1_BASE_ADDRESS
+#define NRF_PWM1 \
+        ((NRF_PWM_Type *)DT_NORDIC_NRF_PWM_PWM_1_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_PWM_PWM_2_BASE_ADDRESS
+#define NRF_PWM2 \
+        ((NRF_PWM_Type *)DT_NORDIC_NRF_PWM_PWM_2_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_PWM_PWM_3_BASE_ADDRESS
+#define NRF_PWM3 \
+        ((NRF_PWM_Type *)DT_NORDIC_NRF_PWM_PWM_3_BASE_ADDRESS)
 #endif
 
-#ifdef FICR_BASE_ADDRESS
-#define NRF_FICR                       ((FICR_INFO_Type*) FICR_BASE_ADDRESS)
+#ifdef DT_NORDIC_NRF_RTC_RTC_0_BASE_ADDRESS
+#define NRF_RTC0 \
+        ((NRF_RTC_Type *)DT_NORDIC_NRF_RTC_RTC_0_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_RTC_RTC_1_BASE_ADDRESS
+#define NRF_RTC1 \
+        ((NRF_RTC_Type *)DT_NORDIC_NRF_RTC_RTC_1_BASE_ADDRESS)
 #endif
 
-#ifdef GPIOTE_0_BASE_ADDRESS
-#define NRF_GPIOTE                     ((NRF_GPIOTE_Type*) GPIOTE_0_BASE_ADDRESS)
+#ifdef DT_NORDIC_NRF_SAADC_ADC_0_BASE_ADDRESS
+#define NRF_SAADC \
+        ((NRF_SAADC_Type *)DT_NORDIC_NRF_SAADC_ADC_0_BASE_ADDRESS)
 #endif
 
-#ifdef I2C_0_BASE_ADDRESS
-#define NRF_TWIM0                      ((NRF_TWIM_Type*) I2C_0_BASE_ADDRESS)
+#ifdef DT_NORDIC_NRF_SPI_SPI_0_BASE_ADDRESS
+#define NRF_SPIM0 \
+        ((NRF_SPIM_Type *)DT_NORDIC_NRF_SPI_SPI_0_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_SPI_SPI_1_BASE_ADDRESS
+#define NRF_SPIM1 \
+        ((NRF_SPIM_Type *)DT_NORDIC_NRF_SPI_SPI_1_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_SPI_SPI_2_BASE_ADDRESS
+#define NRF_SPIM2 \
+        ((NRF_SPIM_Type *)DT_NORDIC_NRF_SPI_SPI_2_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_SPI_SPI_3_BASE_ADDRESS
+#define NRF_SPIM3 \
+        ((NRF_SPIM_Type *)DT_NORDIC_NRF_SPI_SPI_3_BASE_ADDRESS)
 #endif
 
-#ifdef I2C_1_BASE_ADDRESS
-#define NRF_TWIM1                      ((NRF_TWIM_Type*) I2C_1_BASE_ADDRESS)
+#ifdef DT_NORDIC_NRF_TIMER_TIMER_0_BASE_ADDRESS
+#define NRF_TIMER0 \
+        ((NRF_TIMER_Type *)DT_NORDIC_NRF_TIMER_TIMER_0_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_TIMER_TIMER_1_BASE_ADDRESS
+#define NRF_TIMER1 \
+        ((NRF_TIMER_Type *)DT_NORDIC_NRF_TIMER_TIMER_1_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_TIMER_TIMER_2_BASE_ADDRESS
+#define NRF_TIMER2 \
+        ((NRF_TIMER_Type *)DT_NORDIC_NRF_TIMER_TIMER_2_BASE_ADDRESS)
 #endif
 
-#ifdef I2C_2_BASE_ADDRESS
-#define NRF_TWIM2                      ((NRF_TWIM_Type*) I2C_2_BASE_ADDRESS)
+#ifdef DT_NORDIC_NRF_I2C_I2C_0_BASE_ADDRESS
+#define NRF_TWIM0 \
+        ((NRF_TWIM_Type *)DT_NORDIC_NRF_I2C_I2C_0_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_I2C_I2C_1_BASE_ADDRESS
+#define NRF_TWIM1 \
+        ((NRF_TWIM_Type *)DT_NORDIC_NRF_I2C_I2C_1_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_I2C_I2C_2_BASE_ADDRESS
+#define NRF_TWIM2 \
+        ((NRF_TWIM_Type *)DT_NORDIC_NRF_I2C_I2C_2_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_I2C_I2C_3_BASE_ADDRESS
+#define NRF_TWIM3 \
+        ((NRF_TWIM_Type *)DT_NORDIC_NRF_I2C_I2C_3_BASE_ADDRESS)
 #endif
 
-#ifdef I2C_3_BASE_ADDRESS
-#define NRF_TWIM3                      ((NRF_TWIM_Type*) I2C_3_BASE_ADDRESS)
+#ifdef DT_NORDIC_NRF_UARTE_UART_0_BASE_ADDRESS
+#define NRF_UARTE0 \
+        ((NRF_UARTE_Type *)DT_NORDIC_NRF_UARTE_UART_0_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_UARTE_UART_1_BASE_ADDRESS
+#define NRF_UARTE1 \
+        ((NRF_UARTE_Type *)DT_NORDIC_NRF_UARTE_UART_1_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_UARTE_UART_2_BASE_ADDRESS
+#define NRF_UARTE2 \
+        ((NRF_UARTE_Type *)DT_NORDIC_NRF_UARTE_UART_2_BASE_ADDRESS)
+#endif
+#ifdef DT_NORDIC_NRF_UARTE_UART_3_BASE_ADDRESS
+#define NRF_UARTE3 \
+        ((NRF_UARTE_Type *)DT_NORDIC_NRF_UARTE_UART_3_BASE_ADDRESS)
 #endif
 
-#ifdef SPI_0_BASE_ADDRESS
-#define NRF_SPIM0                      ((NRF_SPIM_Type*) SPI_0_BASE_ADDRESS)
-#endif
-
-#ifdef SPI_1_BASE_ADDRESS
-#define NRF_SPIM1                      ((NRF_SPIM_Type*) SPI_1_BASE_ADDRESS)
-#endif
-
-#ifdef SPI_2_BASE_ADDRESS
-#define NRF_SPIM2                      ((NRF_SPIM_Type*) SPI_2_BASE_ADDRESS)
-#endif
-
-#ifdef SPI_3_BASE_ADDRESS
-#define NRF_SPIM3                      ((NRF_SPIM_Type*) SPI_3_BASE_ADDRESS)
-#endif
-
-#ifdef UART_0_BASE_ADDRESS
-#define NRF_UARTE0                     ((NRF_UARTE_Type*) UART_0_BASE_ADDRESS)
-#endif
-
-#ifdef UART_1_BASE_ADDRESS
-#define NRF_UARTE1                     ((NRF_UARTE_Type*) UART_1_BASE_ADDRESS)
-#endif
-
-#ifdef UART_2_BASE_ADDRESS
-#define NRF_UARTE2                     ((NRF_UARTE_Type*) UART_2_BASE_ADDRESS)
-#endif
-
-#ifdef UART_3_BASE_ADDRESS
-#define NRF_UARTE3                     ((NRF_UARTE_Type*) UART_3_BASE_ADDRESS)
-#endif
-
-#if defined(ADC_0_BASE_ADDRESS)
-#define NRF_SAADC                      ((NRF_SAADC_Type*) ADC_0_BASE_ADDRESS)
-#endif
-
-#if defined(WDT_0_BASE_ADDRESS)
-#define NRF_WDT                        ((NRF_WDT_Type*) WDT_0_BASE_ADDRESS)
-#endif
-
-#ifdef TIMER_0_BASE_ADDRESS
-#define NRF_TIMER0                     ((NRF_TIMER_Type*) TIMER_0_BASE_ADDRESS)
-#endif
-
-#ifdef TIMER_1_BASE_ADDRESS
-#define NRF_TIMER1                     ((NRF_TIMER_Type*) TIMER_1_BASE_ADDRESS)
-#endif
-
-#ifdef TIMER_2_BASE_ADDRESS
-#define NRF_TIMER2                     ((NRF_TIMER_Type*) TIMER_2_BASE_ADDRESS)
+#ifdef DT_NORDIC_NRF_WATCHDOG_WDT_0_BASE_ADDRESS
+#define NRF_WDT \
+        ((NRF_WDT_Type *)DT_NORDIC_NRF_WATCHDOG_WDT_0_BASE_ADDRESS)
 #endif
 
 // <<< Use Configuration Wizard in Context Menu >>>\n
@@ -146,8 +172,8 @@
 
 // <e> NRFX_CLOCK_ENABLED - nrfx_clock - CLOCK peripheral driver
 //==========================================================
-#ifndef NRFX_CLOCK_ENABLED
-#define NRFX_CLOCK_ENABLED 0
+#ifdef CONFIG_NRFX_CLOCK
+#define NRFX_CLOCK_ENABLED 1
 #endif
 // <o> NRFX_CLOCK_CONFIG_LF_SRC  - LF Clock Source
 
@@ -232,7 +258,7 @@
 // <e> NRFX_DPPI_ENABLED - nrfx_dppi - DPPI allocator.
 //==========================================================
 #ifndef NRFX_DPPI_ENABLED
-#define NRFX_DPPI_ENABLED 1
+#define NRFX_DPPI_ENABLED 0
 #endif
 // <e> NRFX_DPPI_CONFIG_LOG_ENABLED - Enables logging in the module.
 //==========================================================
@@ -289,8 +315,8 @@
 
 // <e> NRFX_GPIOTE_ENABLED - nrfx_gpiote - GPIOTE peripheral driver
 //==========================================================
-#ifndef NRFX_GPIOTE_ENABLED
-#define NRFX_GPIOTE_ENABLED 0
+#ifdef CONFIG_NRFX_GPIOTE
+#define NRFX_GPIOTE_ENABLED 1
 #endif
 // <o> NRFX_GPIOTE_CONFIG_NUM_OF_LOW_POWER_EVENTS - Number of lower power input pins
 #ifndef NRFX_GPIOTE_CONFIG_NUM_OF_LOW_POWER_EVENTS
@@ -1059,8 +1085,8 @@
 
 // <e> NRFX_SAADC_ENABLED - nrfx_saadc - SAADC peripheral driver
 //==========================================================
-#ifndef NRFX_SAADC_ENABLED
-#define NRFX_SAADC_ENABLED 0
+#ifdef CONFIG_NRFX_SAADC
+#define NRFX_SAADC_ENABLED 1
 #endif
 // <o> NRFX_SAADC_CONFIG_RESOLUTION  - Resolution
 
@@ -1507,28 +1533,28 @@
 
 // <e> NRFX_TIMER_ENABLED - nrfx_timer - TIMER periperal driver
 //==========================================================
-#ifndef NRFX_TIMER_ENABLED
-#define NRFX_TIMER_ENABLED 0
+#ifdef CONFIG_NRFX_TIMER
+#define NRFX_TIMER_ENABLED 1
 #endif
 // <q> NRFX_TIMER0_ENABLED  - Enable TIMER0 instance
 
 
-#ifndef NRFX_TIMER0_ENABLED
-#define NRFX_TIMER0_ENABLED 0
+#ifdef CONFIG_NRFX_TIMER0
+#define NRFX_TIMER0_ENABLED 1
 #endif
 
 // <q> NRFX_TIMER1_ENABLED  - Enable TIMER1 instance
 
 
-#ifndef NRFX_TIMER1_ENABLED
-#define NRFX_TIMER1_ENABLED 0
+#ifdef CONFIG_NRFX_TIMER1
+#define NRFX_TIMER1_ENABLED 1
 #endif
 
 // <q> NRFX_TIMER2_ENABLED  - Enable TIMER2 instance
 
 
-#ifndef NRFX_TIMER2_ENABLED
-#define NRFX_TIMER2_ENABLED 0
+#ifdef CONFIG_NRFX_TIMER2
+#define NRFX_TIMER2_ENABLED 1
 #endif
 
 // <o> NRFX_TIMER_DEFAULT_CONFIG_FREQUENCY  - Timer frequency if in Timer mode
@@ -1777,14 +1803,14 @@
 
 
 #ifndef NRFX_TWIS2_ENABLED
-#define NRFX_TWIS2_ENABLED 1
+#define NRFX_TWIS2_ENABLED 0
 #endif
 
 // <q> NRFX_TWIS3_ENABLED  - Enables TWIS3 instance.
 
 
 #ifndef NRFX_TWIS3_ENABLED
-#define NRFX_TWIS3_ENABLED 1
+#define NRFX_TWIS3_ENABLED 0
 #endif
 
 // <q> NRFX_TWIS_ASSUME_INIT_AFTER_RESET_ONLY  - Assume that any instance would be initialized only once
@@ -1924,7 +1950,7 @@
 #endif
 
 // <o> NRFX_UARTE3_ENABLED - Enables UARTE3 instance.
-#ifdef CONFIG_NRFX_UARTE2
+#ifdef CONFIG_NRFX_UARTE3
 #define NRFX_UARTE3_ENABLED 1
 #endif
 

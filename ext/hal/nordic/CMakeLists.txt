@@ -23,6 +23,9 @@ if(CONFIG_HAS_NRFX)
   zephyr_compile_definitions_ifdef(CONFIG_SOC_NRF52840      NRF52840_XXAA)
   zephyr_compile_definitions_ifdef(CONFIG_SOC_NRF9160       NRF9160_XXAA)
 
+  # Connect Kconfig compilation option for Non-Secure software with option required by MDK/nrfx
+  zephyr_compile_definitions_ifdef(CONFIG_ARM_NONSECURE_FIRMWARE NRF_TRUSTZONE_NONSECURE)
+
   zephyr_sources_ifdef(CONFIG_SOC_SERIES_NRF51X nrfx/mdk/system_nrf51.c)
   zephyr_sources_ifdef(CONFIG_SOC_NRF52810      nrfx/mdk/system_nrf52810.c)
   zephyr_sources_ifdef(CONFIG_SOC_NRF52832      nrfx/mdk/system_nrf52.c)

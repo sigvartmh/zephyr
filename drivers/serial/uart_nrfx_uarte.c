@@ -809,4 +809,3 @@ static int uarte_instance_init(struct device *dev,
 
 	UART_NRF_UARTE_DEVICE(3);
 #endif /* CONFIG_UART_3_NRF_UARTE */
-

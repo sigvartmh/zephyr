@@ -9,4 +9,25 @@ if BOARD_NRF9160_PCA10090
 config BOARD
 	default "nrf9160_pca10090"
 
+if ADC
+
+config ADC_0
+	default y
+
+endif # ADC
+
+if I2C
+
+config I2C_2
+	default y
+
+endif # I2C
+
+if SPI
+
+config SPI_3
+	default y
+
+endif # SPI
+
 endif # BOARD_NRF9160_PCA10090

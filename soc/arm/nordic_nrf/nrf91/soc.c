@@ -12,8 +12,12 @@
  * for the Nordic Semiconductor nRF91 family processor.
  */
 
+#include <kernel.h>
 #include <init.h>
 #include <cortex_m/exc.h>
+#include <nrfx.h>
+#include <soc/nrfx_coredep.h>
+#include <logging/log.h>
 
 #ifdef CONFIG_RUNTIME_NMI
 extern void _NmiInit(void);
@@ -24,8 +28,12 @@ extern void _NmiInit(void);
 
 #if defined(CONFIG_SOC_NRF9160)
 #include <system_nrf9160.h>
+#else
+#error "Unknown SoC."
 #endif
-#include <nrfx.h>
+
+#define LOG_LEVEL CONFIG_SOC_LOG_LEVEL
+LOG_MODULE_REGISTER(soc);
 
 static int nordicsemi_nrf91_init(struct device *arg)
 {
@@ -42,7 +50,6 @@ static int nordicsemi_nrf91_init(struct device *arg)
 	NRF_NVMC->ICACHECNF = NVMC_ICACHECNF_CACHEEN_Msk;
 #endif
 
-
 	_ClearFaults();
 
 	/* Install default handler that simply resets the CPU
@@ -54,5 +61,11 @@ static int nordicsemi_nrf91_init(struct device *arg)
 
 	return 0;
 }
+
+void z_arch_busy_wait(u32_t time_us)
+{
+	nrfx_coredep_delay_us(time_us);
+}
+
 
 SYS_INIT(nordicsemi_nrf91_init, PRE_KERNEL_1, 0);

@@ -10,6 +10,6 @@ inherits:
 
 properties:
     compatible:
-      constraint: "nrf,nrf91-flash-controller"
+      constraint: "nordic,nrf91-flash-controller"
 
 ...

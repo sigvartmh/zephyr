@@ -1,4 +1,4 @@
-# Kconfig - nRF91 PCA10090 board configuration
+# Kconfig - nRF9160 PCA10090 board configuration
 #
 # Copyright (c) 2018 Nordic Semiconductor ASA
 #
@@ -6,4 +6,4 @@
 
 config BOARD_NRF9160_PCA10090
 	bool "nRF9160 PCA10090"
-	depends on SOC_NRF9160_XXAA
+	depends on SOC_NRF9160_SICA
