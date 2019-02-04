@@ -40,9 +40,15 @@ source "ext/Kconfig"
 
 source "tests/Kconfig"
 
+orsource "../nrf/Kconfig.nrf"
+
 menu "Build and Link Features"
 
 menu "Linker Options"
+
+config KERNEL
+	bool "Include Zephyr kernel"
+	default y
 
 choice
 	prompt "Linker Orphan Section Handling"
