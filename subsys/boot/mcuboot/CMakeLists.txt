@@ -9,7 +9,7 @@ add_subdirectory("${MCUBOOT_BASE}/boot/zephyr" ${CMAKE_CURRENT_BINARY_DIR}/mcubo
 
 # TODO: Assert that the bootloader and image use the same key.
 
-set(SIGNED_IMAGE signed.hex)
+set(SIGNED_IMAGE ${CMAKE_CURRENT_BINARY_DIR}/signed_by_mcuboot_zephyr.hex)
 
 set_property(GLOBAL APPEND PROPERTY
   extra_post_build_commands
