@@ -570,11 +570,12 @@ if(FIRST_BOILERPLATE_EXECUTION)
       COMMAND
       ${PYTHON_EXECUTABLE}
       ${ZEPHYR_BASE}/scripts/partition_manager.py
-      -i ${partition_manager_config_files}
-      -c ${autoconf_files}
-      -o override.h
+      --input ${partition_manager_config_files}
+      --configs ${autoconf_files}
+      --override override.h
+      --pm-config-file-name pm_config.h
       --app-override-file ${PROJECT_BINARY_DIR}/include/generated/override.h
-      -s 1048576
+      --flash-size 1048576
       DEPENDS
       ${partition_manager_config_targets}
       )
