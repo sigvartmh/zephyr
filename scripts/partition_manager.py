@@ -173,7 +173,7 @@ def write_pm_config(adr_map, pm_config_file):
     # Build list of all size/address configurations for all items
     for key, value in adr_map.items():
         for property_name in ['size', 'address']:
-            lines.append("#define PM_CFG_%s_%s %d" % (key.upper(), property_name.upper(), adr_map[key][property_name]))
+            lines.append("#define PM_CFG_%s_%s 0x%x" % (key.upper(), property_name.upper(), adr_map[key][property_name]))
     lines.append(get_header_guard_end(pm_config_file))
 
     # Store complete size/address configuration to all input paths
