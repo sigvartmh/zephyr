@@ -169,11 +169,14 @@ def get_header_guard_end(filename):
 def write_pm_config(adr_map, pm_config_file):
     lines = list()
     lines.append(get_header_guard_start(pm_config_file))
-
+    
     # Build list of all size/address configurations for all items
+    for key, value in sorted(adr_map.items(), key=lambda key_value: key_value[1]['address']):
+        lines.append("#define PM_CFG_%s_ADDRESS 0x%x" % (key.upper(), adr_map[key]['address']))
+    lines.append("")
     for key, value in adr_map.items():
-        for property_name in ['size', 'address']:
-            lines.append("#define PM_CFG_%s_%s 0x%x" % (key.upper(), property_name.upper(), adr_map[key][property_name]))
+        lines.append("#define PM_CFG_%s_SIZE 0x%x" % (key.upper(), adr_map[key]['size']))
+
     lines.append(get_header_guard_end(pm_config_file))
 
     # Store complete size/address configuration to all input paths
