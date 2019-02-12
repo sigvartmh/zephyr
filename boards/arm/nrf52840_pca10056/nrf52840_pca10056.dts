@@ -149,7 +149,7 @@
 		#address-cells = <1>;
 		#size-cells = <1>;
 		boot_partition: partition@0 {
-			label = "mcuboot";
+			label = "DEPRECATED_mcuboot";
 			reg = <0x000000000 0x0000C000>;
 		};
 		slot0_partition: partition@c000 {
