@@ -193,7 +193,7 @@ int cmd_advx(const struct shell *shell, size_t argc, char *argv[])
 		} else if (!strcmp(argv[2], "ad")) {
 		} else {
 			handle = strtoul(argv[2], NULL, 16);
-			if (handle >= CONFIG_BT_ADV_MAX) {
+			if (handle >= BT_CTLR_ADV_MAX) {
 				return -EINVAL;
 			}
 		}
@@ -207,7 +207,7 @@ int cmd_advx(const struct shell *shell, size_t argc, char *argv[])
 		} else if (!strcmp(argv[3], "ad")) {
 		} else {
 			handle = strtoul(argv[3], NULL, 16);
-			if (handle >= CONFIG_BT_ADV_MAX) {
+			if (handle >= BT_CTLR_ADV_MAX) {
 				return -EINVAL;
 			}
 		}
@@ -219,7 +219,7 @@ int cmd_advx(const struct shell *shell, size_t argc, char *argv[])
 		} else if (!strcmp(argv[4], "ad")) {
 		} else {
 			handle = strtoul(argv[4], NULL, 16);
-			if (handle >= CONFIG_BT_ADV_MAX) {
+			if (handle >= BT_CTLR_ADV_MAX) {
 				return -EINVAL;
 			}
 		}
@@ -229,7 +229,7 @@ int cmd_advx(const struct shell *shell, size_t argc, char *argv[])
 		if (!strcmp(argv[5], "ad")) {
 		} else {
 			handle = strtoul(argv[5], NULL, 16);
-			if (handle >= CONFIG_BT_ADV_MAX) {
+			if (handle >= BT_CTLR_ADV_MAX) {
 				return -EINVAL;
 			}
 		}
@@ -237,7 +237,7 @@ int cmd_advx(const struct shell *shell, size_t argc, char *argv[])
 
 	if (argc > 6) {
 		handle = strtoul(argv[6], NULL, 16);
-		if (handle >= CONFIG_BT_ADV_MAX) {
+		if (handle >= BT_CTLR_ADV_MAX) {
 			return -EINVAL;
 		}
 	}
@@ -351,58 +351,4 @@ int cmd_ull_reset(const struct shell *shell, size_t  argc, char *argv[])
 	return 0;
 }
 
-#if defined(CONFIG_BT_TMP)
-#include "../controller/ll_sw/ull_tmp.h"
-
-int cmd_ull_tmp_enable(const struct shell *shell, size_t  argc, char *argv[])
-{
-	u16_t handle = 0;
-	int enable;
-	int err;
-
-	if (argc < 2) {
-		return -EINVAL;
-	}
-
-	if (argc > 1) {
-		if (!strcmp(argv[1], "on")) {
-			enable = 1;
-		} else if (!strcmp(argv[1], "off")) {
-			enable = 0;
-		} else {
-			return -EINVAL;
-		}
-	}
-
-	if (argc > 2) {
-		handle = strtoul(argv[2], NULL, 16);
-	}
-
-	if (enable) {
-		err = ull_tmp_enable(handle);
-	} else {
-		err = ull_tmp_disable(handle);
-	}
-
-	shell_print(shell, "Done (%d).", err);
-
-	return err;
-}
-
-int cmd_ull_tmp_send(const struct shell *shell, size_t  argc, char *argv[])
-{
-	u16_t handle = 0;
-	int err;
-
-	if (argc > 1) {
-		handle = strtoul(argv[1], NULL, 16);
-	}
-
-	err = ull_tmp_data_send(handle, 0, NULL);
-
-	shell_print(shell, "Done (%d).", err);
-
-	return err;
-}
-#endif /* CONFIG_BT_TMP */
 #endif /* CONFIG_BT_LL_SW_SPLIT */

@@ -109,8 +109,6 @@ u8_t dst_mac[8] = { 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0xbb, 0xaa };
 
 /* 6CO contexts */
 static struct net_icmpv6_nd_opt_6co ctx1 = {
-	.type = 0x22,
-	.len = 0x02,
 	.context_len = 0x40,
 	.flag = 0x11,
 	.reserved = 0,
@@ -123,8 +121,6 @@ static struct net_icmpv6_nd_opt_6co ctx1 = {
 		      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 } } }
 
 static struct net_icmpv6_nd_opt_6co ctx2 = {
-	.type = 0x22,
-	.len = 0x03,
 	.context_len = 0x80,
 	.flag = 0x12,
 	.reserved = 0,
@@ -863,7 +859,7 @@ static void test_6lo(struct net_6lo_data *data)
 #if DEBUG > 0
 	TC_PRINT("length before compression %zu\n",
 		 net_pkt_get_len(pkt));
-	net_hexdump_frags("before-compression", pkt, false);
+	net_pkt_hexdump(pkt, "before-compression");
 #endif
 
 	zassert_true((net_6lo_compress(pkt, data->iphc) >= 0),
@@ -872,7 +868,7 @@ static void test_6lo(struct net_6lo_data *data)
 #if DEBUG > 0
 	TC_PRINT("length after compression %zu\n",
 		 net_pkt_get_len(pkt));
-	net_hexdump_frags("after-compression", pkt, false);
+	net_pkt_hexdump(pkt, "after-compression");
 #endif
 
 	zassert_true(net_6lo_uncompress(pkt),
@@ -880,7 +876,7 @@ static void test_6lo(struct net_6lo_data *data)
 #if DEBUG > 0
 	TC_PRINT("length after uncompression %zu\n",
 	       net_pkt_get_len(pkt));
-	net_hexdump_frags("after-uncompression", pkt, false);
+	net_pkt_hexdump(pkt, "after-uncompression");
 #endif
 
 	zassert_true(compare_data(pkt, data), NULL);

@@ -304,6 +304,12 @@ if(FIRST_BOILERPLATE_EXECUTION)
     set(SOC_DIR ${SOC_ROOT}/soc)
   endif()
 
+if(NOT ARCH_ROOT)
+  set(ARCH_DIR ${ZEPHYR_BASE}/arch)
+else()
+  set(ARCH_DIR ${ARCH_ROOT}/arch)
+endif()
+
   set(shield_dir ${root}/boards/shields)
   if(DEFINED SHIELD)
      string(REPLACE " " ";" SHIELD_AS_LIST "${SHIELD}")
@@ -445,6 +451,8 @@ alternate .overlay file using this parameter. These settings will override the \
 settings in the board's .dts file. Multiple files may be listed, e.g. \
 DTC_OVERLAY_FILE=\"dts1.overlay dts2.overlay\"")
 
+include(${ZEPHYR_BASE}/cmake/zephyr_module.cmake)
+include(${ZEPHYR_BASE}/cmake/dts.cmake)
 include(${ZEPHYR_BASE}/cmake/kconfig.cmake)
 
 set(SOC_NAME   ${CONFIG_SOC})
@@ -456,8 +464,6 @@ if("${SOC_SERIES}" STREQUAL "")
 else()
   set(SOC_PATH ${SOC_FAMILY}/${SOC_SERIES})
 endif()
-
-include(${ZEPHYR_BASE}/cmake/dts.cmake)
 
 include(${ZEPHYR_BASE}/cmake/target_toolchain.cmake)
 

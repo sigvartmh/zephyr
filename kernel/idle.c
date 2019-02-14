@@ -26,13 +26,13 @@
  */
 unsigned char sys_pm_idle_exit_notify;
 
-#if defined(CONFIG_SYS_POWER_LOW_POWER_STATE)
+#if defined(CONFIG_SYS_POWER_LOW_POWER_STATES)
 void __attribute__((weak)) sys_resume(void)
 {
 }
 #endif
 
-#if defined(CONFIG_SYS_POWER_DEEP_SLEEP)
+#if defined(CONFIG_SYS_POWER_DEEP_SLEEP_STATES)
 void __attribute__((weak)) sys_resume_from_deep_sleep(void)
 {
 }
@@ -51,6 +51,7 @@ void __attribute__((weak)) sys_resume_from_deep_sleep(void)
  *
  * @return N/A
  */
+#ifndef CONFIG_SMP
 static void set_kernel_idle_time_in_ticks(s32_t ticks)
 {
 #ifdef CONFIG_SYS_POWER_MANAGEMENT
@@ -58,7 +59,6 @@ static void set_kernel_idle_time_in_ticks(s32_t ticks)
 #endif
 }
 
-#ifndef CONFIG_SMP
 static void sys_power_save_idle(void)
 {
 	s32_t ticks = _get_next_timeout_expiry();
@@ -74,15 +74,15 @@ static void sys_power_save_idle(void)
 #endif
 
 	set_kernel_idle_time_in_ticks(ticks);
-#if (defined(CONFIG_SYS_POWER_LOW_POWER_STATE) || \
-	defined(CONFIG_SYS_POWER_DEEP_SLEEP))
+#if (defined(CONFIG_SYS_POWER_LOW_POWER_STATES) || \
+	defined(CONFIG_SYS_POWER_DEEP_SLEEP_STATES))
 
 	sys_pm_idle_exit_notify = 1U;
 
 	/*
 	 * Call the suspend hook function of the soc interface to allow
 	 * entry into a low power state. The function returns
-	 * SYS_PM_NOT_HANDLED if low power state was not entered, in which
+	 * SYS_POWER_STATE_ACTIVE if low power state was not entered, in which
 	 * case, kernel does normal idle processing.
 	 *
 	 * This function is entered with interrupts disabled. If a low power
@@ -92,7 +92,7 @@ static void sys_power_save_idle(void)
 	 * idle processing re-enables interrupts which is essential for
 	 * the kernel's scheduling logic.
 	 */
-	if (sys_suspend(ticks) == SYS_PM_NOT_HANDLED) {
+	if (sys_suspend(ticks) == SYS_POWER_STATE_ACTIVE) {
 		sys_pm_idle_exit_notify = 0U;
 		k_cpu_idle();
 	}
@@ -104,7 +104,7 @@ static void sys_power_save_idle(void)
 
 void _sys_power_save_idle_exit(s32_t ticks)
 {
-#if defined(CONFIG_SYS_POWER_LOW_POWER_STATE)
+#if defined(CONFIG_SYS_POWER_LOW_POWER_STATES)
 	/* Some CPU low power states require notification at the ISR
 	 * to allow any operations that needs to be done before kernel
 	 * switches task or processes nested interrupts. This can be

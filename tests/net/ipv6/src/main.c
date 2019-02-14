@@ -22,6 +22,7 @@ LOG_MODULE_REGISTER(net_test, CONFIG_NET_IPV6_LOG_LEVEL);
 #include <net/net_pkt.h>
 #include <net/net_ip.h>
 #include <net/ethernet.h>
+#include <net/udp.h>
 
 #include "icmpv6.h"
 #include "ipv6.h"
@@ -119,7 +120,6 @@ static const unsigned char ipv6_hbho[] = {
 };
 
 static bool expecting_ra;
-static bool expecting_dad;
 static u32_t dad_time[3];
 static bool test_failed;
 static struct k_sem wait_data;
@@ -198,15 +198,29 @@ static void prepare_ra_message(struct net_pkt *pkt)
 
 static struct net_icmp_hdr *get_icmp_hdr(struct net_pkt *pkt)
 {
+	NET_PKT_DATA_ACCESS_CONTIGUOUS_DEFINE(icmp_access, struct net_icmp_hdr);
 	/* First frag is the ll header */
 	struct net_buf *bak = pkt->frags;
+	struct net_pkt_cursor backup;
 	struct net_icmp_hdr *hdr;
 
 	pkt->frags = bak->frags;
 
-	hdr = net_pkt_icmp_data(pkt);
+	net_pkt_cursor_backup(pkt, &backup);
+	net_pkt_cursor_init(pkt);
 
+	if (net_pkt_skip(pkt, net_pkt_ip_hdr_len(pkt) +
+			 net_pkt_ipv6_ext_len(pkt))) {
+		hdr = NULL;
+		goto out;
+	}
+
+	hdr = (struct net_icmp_hdr *)net_pkt_get_data_new(pkt, &icmp_access);
+
+out:
 	pkt->frags = bak;
+
+	net_pkt_cursor_restore(pkt, &backup);
 
 	return hdr;
 }
@@ -233,29 +247,23 @@ static int tester_send(struct device *dev, struct net_pkt *pkt)
 	}
 
 	if (icmp->type == NET_ICMPV6_NS) {
-		if (expecting_dad) {
-			if (dad_time[0] == 0) {
-				dad_time[0] = k_uptime_get_32();
-			} else if (dad_time[1] == 0) {
-				dad_time[1] = k_uptime_get_32();
-			} else if (dad_time[2] == 0) {
-				dad_time[2] = k_uptime_get_32();
-			}
-
-			goto out;
+		if (dad_time[0] == 0) {
+			dad_time[0] = k_uptime_get_32();
+		} else if (dad_time[1] == 0) {
+			dad_time[1] = k_uptime_get_32();
+		} else if (dad_time[2] == 0) {
+			dad_time[2] = k_uptime_get_32();
 		}
-	}
 
-	/* Feed this data back to us */
-	if (net_recv_data(net_pkt_iface(pkt), pkt) < 0) {
-		TC_ERROR("Data receive failed.");
 		goto out;
 	}
 
-	/* L2 will unref pkt, so since it got to rx path we need to ref it again
-	 * or it will be freed.
-	 */
-	net_pkt_ref(pkt);
+	/* Feed this data back to us */
+	if (net_recv_data(net_pkt_iface(pkt),
+			  net_pkt_clone(pkt, K_NO_WAIT)) < 0) {
+		TC_ERROR("Data receive failed.");
+		goto out;
+	}
 
 	return 0;
 
@@ -1079,7 +1087,7 @@ static void test_dad_timeout(void)
 
 	struct net_if_addr *ifaddr;
 
-	expecting_dad = true;
+	dad_time[0] = dad_time[1] = dad_time[2] = 0;
 
 	ifaddr = net_if_ipv6_addr_add(iface, &addr1, NET_ADDR_AUTOCONF, 0xffff);
 	zassert_not_null(ifaddr, "Address 1 cannot be added");
@@ -1104,12 +1112,10 @@ static void test_dad_timeout(void)
 	zassert_true((dad_time[2] - dad_time[0]) < 100,
 		     "DAD timers took too long time [%u] [%u] [%u]",
 		     dad_time[0], dad_time[1], dad_time[2]);
-
-	expecting_dad = false;
 #endif
 }
 
-#define NET_UDP_HDR(pkt)  ((struct net_udp_hdr *)(net_pkt_udp_data(pkt)))
+#define NET_UDP_HDR(pkt)  ((struct net_udp_hdr *)(net_udp_get_hdr(pkt, NULL)))
 
 static void setup_ipv6_udp(struct net_pkt *pkt,
 			   struct in6_addr *local_addr,
@@ -1166,10 +1172,12 @@ static enum net_verdict recv_msg(struct in6_addr *src, struct in6_addr *dst)
 
 	setup_ipv6_udp(pkt, src, dst, 4242, 4321);
 
+	net_pkt_cursor_init(pkt);
+
 	/* We by-pass the normal packet receiving flow in this case in order
 	 * to simplify the testing.
 	 */
-	return net_ipv6_process_pkt(pkt, false);
+	return net_ipv6_input(pkt, false);
 }
 
 static int send_msg(struct in6_addr *src, struct in6_addr *dst)
@@ -1297,11 +1305,15 @@ static void net_ctx_listen(struct net_context *ctx)
 
 static void recv_cb(struct net_context *context,
 		    struct net_pkt *pkt,
+		    union net_ip_header *ip_hdr,
+		    union net_proto_header *proto_hdr,
 		    int status,
 		    void *user_data)
 {
 	ARG_UNUSED(context);
 	ARG_UNUSED(pkt);
+	ARG_UNUSED(ip_hdr);
+	ARG_UNUSED(proto_hdr);
 	ARG_UNUSED(status);
 	ARG_UNUSED(user_data);
 
