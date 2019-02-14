@@ -718,7 +718,6 @@ gen_kobj(KOBJ_INCLUDE_PATH)
 
 set(OFFSETS_C_PATH ${ARCH_DIR}/${ARCH}/core/offsets/offsets.c)
 set(OFFSETS_H_PATH ${PROJECT_BINARY_DIR}/include/generated/offsets.h)
-
 add_library(          ${OFFSETS_LIB} OBJECT ${OFFSETS_C_PATH})
 target_link_libraries(${OFFSETS_LIB} ${IMAGE}zephyr_interface)
 add_dependencies(     ${OFFSETS_LIB}
@@ -1175,7 +1174,7 @@ if(CONFIG_APP_SHARED_MEM AND CONFIG_USERSPACE)
     ${NEWLIB_PART}
     $<$<BOOL:${CMAKE_VERBOSE_MAKEFILE}>:--verbose>
     DEPENDS
-    kernel
+    ${KERNEL_LIBRARY}
     ${ZEPHYR_LIBS_PROPERTY}
     WORKING_DIRECTORY ${PROJECT_BINARY_DIR}/
     COMMENT "Generating app_smem linker section"
@@ -1364,6 +1363,7 @@ if(FIRST_BOILERPLATE_EXECUTION)
   if(HEX_FILES_TO_MERGE)
     # Merge in out-of-tree hex files.
     set(MERGED_HEX_NAME merged.hex)
+
     add_custom_command(
       OUTPUT ${MERGED_HEX_NAME}
       COMMAND

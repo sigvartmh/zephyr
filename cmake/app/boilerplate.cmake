@@ -298,17 +298,17 @@ if(FIRST_BOILERPLATE_EXECUTION)
   # Store the selected shield in the cache
   set(CACHED_SHIELD ${SHIELD} CACHE STRING "Selected shield")
 
+  if(NOT ARCH_ROOT)
+    set(ARCH_DIR ${ZEPHYR_BASE}/arch)
+  else()
+    set(ARCH_DIR ${ARCH_ROOT}/arch)
+  endif()
+
   if(NOT SOC_ROOT)
     set(SOC_DIR ${ZEPHYR_BASE}/soc)
   else()
     set(SOC_DIR ${SOC_ROOT}/soc)
   endif()
-
-if(NOT ARCH_ROOT)
-  set(ARCH_DIR ${ZEPHYR_BASE}/arch)
-else()
-  set(ARCH_DIR ${ARCH_ROOT}/arch)
-endif()
 
   set(shield_dir ${root}/boards/shields)
   if(DEFINED SHIELD)
@@ -384,6 +384,7 @@ endif()
   # preprocess DT sources, and then, after we have finished processing
   # both DT and Kconfig we complete the target-specific configuration,
   # and possibly change the toolchain.
+  include(${ZEPHYR_BASE}/cmake/zephyr_module.cmake)
   include(${ZEPHYR_BASE}/cmake/generic_toolchain.cmake)
 
   string(REPLACE ";" " " BOARD_ROOT_SPACE_SEPARATED "${BOARD_ROOT}")
@@ -451,7 +452,6 @@ alternate .overlay file using this parameter. These settings will override the \
 settings in the board's .dts file. Multiple files may be listed, e.g. \
 DTC_OVERLAY_FILE=\"dts1.overlay dts2.overlay\"")
 
-include(${ZEPHYR_BASE}/cmake/zephyr_module.cmake)
 include(${ZEPHYR_BASE}/cmake/dts.cmake)
 include(${ZEPHYR_BASE}/cmake/kconfig.cmake)
 

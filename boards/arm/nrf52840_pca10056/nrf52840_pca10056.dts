@@ -166,6 +166,7 @@
 		compatible = "fixed-partitions";
 		#address-cells = <1>;
 		#size-cells = <1>;
+
 		boot_partition: partition@0 {
 			label = "DEPRECATED_mcuboot";
 			reg = <0x000000000 0x0000C000>;
