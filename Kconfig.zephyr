@@ -40,7 +40,7 @@ source "ext/Kconfig"
 
 source "tests/Kconfig"
 
-source "$(PROJECT_BINARY_DIR)/Kconfig.modules"
+source "$(CMAKE_BINARY_DIR)/Kconfig.modules"
 
 orsource "../nrf/Kconfig.nrf"
 

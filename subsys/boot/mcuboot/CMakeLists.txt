@@ -18,7 +18,7 @@ set_property(GLOBAL APPEND PROPERTY
   ${MCUBOOT_BASE}/scripts/imgtool.py
   sign
   --key ${MCUBOOT_BASE}/${CONFIG_BOOT_SIGNATURE_KEY_FILE}
-  --header-size ${CONFIG_TEXT_SECTION_OFFSET}
+  --header-size 0x200 # TODO: Configurable?
   --align 8           # TODO: Configurable?
   --version 1.0       # TODO: Configurable?
   --slot-size 0x32000 # TODO: Configurable?

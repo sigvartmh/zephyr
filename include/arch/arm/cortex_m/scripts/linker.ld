@@ -175,7 +175,7 @@ SECTIONS
 
 	_vector_end = .;
 
-#if defined(CONFIG_SB_FIRMWARE_INFO_OFFSET)
+#if defined(CONFIG_SB_FIRMWARE_INFO_OFFSET) && defined(CONFIG_SECURE_BOOT)
 	. = CONFIG_SB_FIRMWARE_INFO_OFFSET;
 	KEEP(*(.firmware_info))
 #endif
