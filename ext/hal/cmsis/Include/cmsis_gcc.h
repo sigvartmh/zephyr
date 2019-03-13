@@ -899,7 +899,8 @@ __STATIC_FORCEINLINE void __DMB(void)
  */
 __STATIC_FORCEINLINE uint32_t __REV(uint32_t value)
 {
-#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5)
+#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 5) || \
+    __has_builtin(__builtin_bswap32)
   return __builtin_bswap32(value);
 #else
   uint32_t result;
@@ -933,7 +934,8 @@ __STATIC_FORCEINLINE uint32_t __REV16(uint32_t value)
  */
 __STATIC_FORCEINLINE int16_t __REVSH(int16_t value)
 {
-#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
+#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8) || \
+    __has_builtin(__builtin_bswap16)
   return (int16_t)__builtin_bswap16(value);
 #else
   int16_t result;
@@ -1041,7 +1043,7 @@ __STATIC_FORCEINLINE uint8_t __LDREXB(volatile uint8_t *addr)
 {
     uint32_t result;
 
-#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
+#if (__clang__) || (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
    __ASM volatile ("ldrexb %0, %1" : "=r" (result) : "Q" (*addr) );
 #else
     /* Prior to GCC 4.8, "Q" will be expanded to [rx, #0] which is not
@@ -1063,7 +1065,7 @@ __STATIC_FORCEINLINE uint16_t __LDREXH(volatile uint16_t *addr)
 {
     uint32_t result;
 
-#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
+#if (__clang__) || (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
    __ASM volatile ("ldrexh %0, %1" : "=r" (result) : "Q" (*addr) );
 #else
     /* Prior to GCC 4.8, "Q" will be expanded to [rx, #0] which is not
@@ -1217,7 +1219,7 @@ __STATIC_FORCEINLINE uint8_t __LDRBT(volatile uint8_t *ptr)
 {
     uint32_t result;
 
-#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
+#if (__clang__) || (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
    __ASM volatile ("ldrbt %0, %1" : "=r" (result) : "Q" (*ptr) );
 #else
     /* Prior to GCC 4.8, "Q" will be expanded to [rx, #0] which is not
@@ -1239,7 +1241,7 @@ __STATIC_FORCEINLINE uint16_t __LDRHT(volatile uint16_t *ptr)
 {
     uint32_t result;
 
-#if (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
+#if (__clang__) || (__GNUC__ > 4) || (__GNUC__ == 4 && __GNUC_MINOR__ >= 8)
    __ASM volatile ("ldrht %0, %1" : "=r" (result) : "Q" (*ptr) );
 #else
     /* Prior to GCC 4.8, "Q" will be expanded to [rx, #0] which is not

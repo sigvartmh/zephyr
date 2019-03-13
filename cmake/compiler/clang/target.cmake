@@ -19,6 +19,42 @@ find_program(CMAKE_C_COMPILER   clang   ${find_program_clang_args})
 find_program(CMAKE_CXX_COMPILER clang++ ${find_program_clang_args})
 
 if(NOT "${ARCH}" STREQUAL "posix")
+  include(${ZEPHYR_BASE}/cmake/gcc-m-cpu.cmake)
+
+  if("${ARCH}" STREQUAL "arm")
+    set(LIBC_INCLUDE_DIR "${ZEPHYR_SDK_INSTALL_DIR}/${triple}/${triple}/include/")
+
+    list(APPEND TOOLCHAIN_C_FLAGS
+      -fshort-enums
+      -mthumb
+      -mcpu=${GCC_M_CPU}
+      )
+    list(APPEND TOOLCHAIN_LD_FLAGS
+      -fshort-enums
+      -mthumb
+      -mcpu=${GCC_M_CPU}
+      )
+
+    include(${ZEPHYR_BASE}/cmake/fpu-for-gcc-m-cpu.cmake)
+
+    if(CONFIG_FLOAT)
+      list(APPEND TOOLCHAIN_C_FLAGS -mfpu=${FPU_FOR_${GCC_M_CPU}})
+      list(APPEND TOOLCHAIN_LD_FLAGS -mfpu=${FPU_FOR_${GCC_M_CPU}})
+      if    (CONFIG_FP_SOFTABI)
+        list(APPEND TOOLCHAIN_C_FLAGS -mfloat-abi=softfp)
+        list(APPEND TOOLCHAIN_LD_FLAGS -mfloat-abi=softfp)
+      elseif(CONFIG_FP_HARDABI)
+        list(APPEND TOOLCHAIN_C_FLAGS -mfloat-abi=hard)
+        list(APPEND TOOLCHAIN_LD_FLAGS -mfloat-abi=hard)
+      endif()
+    else()
+      list(APPEND TOOLCHAIN_C_FLAGS -mfpu=none)
+    endif()
+  elseif("${ARCH}" STREQUAL "arc")
+    list(APPEND TOOLCHAIN_C_FLAGS
+      -mcpu=${GCC_M_CPU}
+      )
+  endif()
 
   foreach(file_name include/stddef.h include-fixed/limits.h)
     execute_process(
@@ -48,7 +84,13 @@ if(NOT "${ARCH}" STREQUAL "posix")
 
   assert_exists(LIBGCC_DIR)
 
-  list(APPEND LIB_INCLUDE_DIR "-L\"${LIBGCC_DIR}\"")
+  if ("${ARCH}" STREQUAL "x86")
+    get_filename_component(LIBGCC_DIR ${LIBGCC_FILE_NAME} DIRECTORY)
+
+    assert_exists(LIBGCC_DIR)
+
+    list(APPEND LIB_INCLUDE_DIR "-L\"${LIBGCC_DIR}\"")
+  endif()
   list(APPEND TOOLCHAIN_LIBS gcc)
 
   set(CMAKE_REQUIRED_FLAGS -nostartfiles -nostdlib ${isystem_include_flags} -Wl,--unresolved-symbols=ignore-in-object-files)
