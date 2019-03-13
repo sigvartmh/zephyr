@@ -33,6 +33,7 @@ if(NOT "${ARCH}" STREQUAL "posix")
       -fshort-enums
       -mthumb
       -mcpu=${GCC_M_CPU}
+      -Wno-typedef-redefinition # for Cypress
       )
 
     include(${ZEPHYR_BASE}/cmake/fpu-for-gcc-m-cpu.cmake)
