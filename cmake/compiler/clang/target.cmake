@@ -34,6 +34,7 @@ if(NOT "${ARCH}" STREQUAL "posix")
       -mthumb
       -mcpu=${GCC_M_CPU}
       -Wno-typedef-redefinition # for Cypress
+      -Wno-attribute-packed-for-bitfield # for bluetooth packed bitfields
       )
 
     include(${ZEPHYR_BASE}/cmake/fpu-for-gcc-m-cpu.cmake)
