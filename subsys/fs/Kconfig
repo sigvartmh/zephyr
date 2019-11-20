@@ -83,6 +83,13 @@ config PM_PARTITION_SIZE_NFFS_STORAGE
 	help
 	  Flash space set aside for the nffs storage partition.
 
+config PM_PARTITION_SIZE_LITTLEFS
+	hex "Flash space reserved for nffs storage partition"
+	default 0x6000
+	help
+	  Flash space set aside for the nffs storage partition.
+# end nrf/subsys/partition_manager/Kconfig.template.partition_size
+
 config FS_NFFS_FLASH_DEV_NAME
 	string "Flash device name to be used"
 
